@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/category_entity.dart';
+import '../../domain/repositories/category_repository.dart';
 import 'category_providers.dart';
 
 class CategoryListNotifier extends StateNotifier<AsyncValue<List<CategoryEntity>>> {

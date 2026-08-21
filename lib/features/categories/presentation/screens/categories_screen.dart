@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/constants.dart';
+import '../../domain/entities/category_entity.dart';
 import '../providers/category_list_provider.dart';
 import '../widgets/category_card.dart';
 import '../widgets/category_dialog.dart';

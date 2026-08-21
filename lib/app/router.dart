@@ -5,6 +5,7 @@ import '../features/tasks/presentation/screens/tasks_screen.dart';
 import '../features/calendar/presentation/screens/calendar_screen.dart';
 import '../features/statistics/presentation/screens/statistics_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/categories/presentation/screens/categories_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -48,6 +49,12 @@ final GoRouter appRouter = GoRouter(
           pageBuilder: (context, state) => const NoTransitionPage(
             child: SettingsScreen(),
           ),
+          routes: [
+            GoRoute(
+              path: 'categories',
+              builder: (context, state) => const CategoriesScreen(),
+            ),
+          ],
         ),
       ],
     ),
