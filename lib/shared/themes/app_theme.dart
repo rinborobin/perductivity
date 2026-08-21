@@ -20,7 +20,7 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.lightBackground,
       textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -138,7 +138,7 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.darkBackground,
       textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 1,
         color: AppColors.darkSurface,
         shape: RoundedRectangleBorder(
