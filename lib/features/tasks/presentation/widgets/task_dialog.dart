@@ -1,0 +1,252 @@
+import 'package:flutter/material.dart';
+import '../../../../core/constants/constants.dart';
+import '../../../../core/database/database.dart';
+import '../../domain/entities/task_entity.dart';
+import '../../../categories/domain/entities/category_entity.dart';
+
+class TaskDialog extends StatefulWidget {
+  final TaskEntity? task;
+  final List<CategoryEntity> categories;
+  final void Function({
+    required String title,
+    String? description,
+    required int categoryId,
+    required TaskPriority priority,
+    DateTime? dueDate,
+    TaskStatus? status,
+  }) onSave;
+
+  const TaskDialog({
+    required this.onSave,
+    required this.categories,
+    this.task,
+    super.key,
+  });
+
+  @override
+  State<TaskDialog> createState() => _TaskDialogState();
+}
+
+class _TaskDialogState extends State<TaskDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
+  late int _selectedCategoryId;
+  late TaskPriority _selectedPriority;
+  TaskStatus? _selectedStatus;
+  DateTime? _selectedDueDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.task?.title ?? '');
+    _descriptionController = TextEditingController(text: widget.task?.description ?? '');
+    _selectedCategoryId = widget.task?.categoryId ?? (widget.categories.isNotEmpty ? widget.categories.first.id! : 0);
+    _selectedPriority = widget.task?.priority ?? TaskPriority.medium;
+    _selectedStatus = widget.task?.status;
+    _selectedDueDate = widget.task?.dueDate;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.categories.isEmpty) {
+      return AlertDialog(
+        title: const Text('No Categories'),
+        content: const Text('Please create a category first before adding tasks.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      );
+    }
+
+    return AlertDialog(
+      title: Text(widget.task == null ? 'Create Task' : 'Edit Task'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'Enter task title',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a title';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  hintText: 'Enter task description',
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const Text('Category'),
+              const SizedBox(height: AppSpacing.sm),
+              DropdownButtonFormField<int>(
+                initialValue: _selectedCategoryId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                ),
+                items: widget.categories.map((category) {
+                  return DropdownMenuItem(
+                    value: category.id,
+                    child: Text(category.name),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedCategoryId = value);
+                  }
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              const Text('Priority'),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: TaskPriority.values.map((priority) {
+                  final isSelected = _selectedPriority == priority;
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: AppSpacing.sm),
+                      child: ChoiceChip(
+                        label: Text(priority.name.toUpperCase()),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() => _selectedPriority = priority);
+                          }
+                        },
+                        selectedColor: _getPriorityColor(priority).withValues(alpha: 0.2),
+                        labelStyle: TextStyle(
+                          color: isSelected ? _getPriorityColor(priority) : null,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (widget.task != null) ...[
+                const Text('Status'),
+                const SizedBox(height: AppSpacing.sm),
+                DropdownButtonFormField<TaskStatus>(
+                  initialValue: _selectedStatus,
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  ),
+                  items: TaskStatus.values.map((status) {
+                    return DropdownMenuItem(
+                      value: status,
+                      child: Text(status.name.replaceAll('_', ' ')),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedStatus = value);
+                    }
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              const Text('Due Date (optional)'),
+              const SizedBox(height: AppSpacing.sm),
+              InkWell(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDueDate ?? DateTime.now(),
+                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+                  );
+                  if (date != null) {
+                    setState(() => _selectedDueDate = date);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.lightBorder),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 20),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        _selectedDueDate != null
+                            ? '${_selectedDueDate!.day}/${_selectedDueDate!.month}/${_selectedDueDate!.year}'
+                            : 'Select date',
+                      ),
+                      const Spacer(),
+                      if (_selectedDueDate != null)
+                        IconButton(
+                          icon: const Icon(Icons.clear, size: 16),
+                          onPressed: () => setState(() => _selectedDueDate = null),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              widget.onSave(
+                title: _titleController.text,
+                description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+                categoryId: _selectedCategoryId,
+                priority: _selectedPriority,
+                dueDate: _selectedDueDate,
+                status: _selectedStatus,
+              );
+              Navigator.pop(context);
+            }
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  Color _getPriorityColor(TaskPriority priority) {
+    switch (priority) {
+      case TaskPriority.high:
+        return AppColors.error;
+      case TaskPriority.medium:
+        return AppColors.warning;
+      case TaskPriority.low:
+        return AppColors.success;
+    }
+  }
+}
