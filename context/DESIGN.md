@@ -506,6 +506,24 @@ Safe Areas must always be respected.
 
 ---
 
+## Home Dashboard
+
+The Home screen is the user's daily command center.
+
+It should prioritize:
+
+- Greeting and current date
+- One-tap task creation
+- Today's progress and pending work
+- Tasks due today
+- Upcoming tasks
+- Unscheduled tasks
+
+When there is no data, the screen must explain the next step and provide a
+primary action to create the first task.
+
+---
+
 # 12. Navigation
 
 Mobile

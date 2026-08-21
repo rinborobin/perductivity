@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/database/database.dart';
+import '../../../../shared/widgets/app_action_button.dart';
+import '../../../../shared/widgets/app_bottom_sheet.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../../categories/domain/entities/category_entity.dart';
 import '../../../categories/presentation/providers/category_list_provider.dart';
@@ -10,11 +12,31 @@ import '../providers/task_filter_provider.dart';
 import '../widgets/task_card.dart';
 import '../widgets/task_dialog.dart';
 
-class TasksScreen extends ConsumerWidget {
+class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TasksScreen> createState() => _TasksScreenState();
+}
+
+class _TasksScreenState extends ConsumerState<TasksScreen> {
+  late final TextEditingController _searchController;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tasksState = ref.watch(taskListProvider);
     final categoriesState = ref.watch(categoryListProvider);
     final activeFilter = ref.watch(taskFilterProvider);
@@ -32,11 +54,12 @@ class TasksScreen extends ConsumerWidget {
       body: tasksState.when(
         data: (tasks) {
           if (tasks.isEmpty) {
-            return _buildEmptyState(context);
+            return _buildEmptyState(context, ref, categoriesState);
           }
 
+          final searchedTasks = _filterBySearch(tasks);
           final filteredTasks = applyTaskFilter(
-            tasks,
+            searchedTasks,
             activeFilter,
             now: DateTime.now(),
           );
@@ -46,11 +69,25 @@ class TasksScreen extends ConsumerWidget {
           final pinnedTasks = activeTasks.where((t) => t.isPinned).toList();
           final unpinnedTasks = activeTasks.where((t) => !t.isPinned).toList();
 
+          if (activeTasks.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: () => ref.read(taskListProvider.notifier).loadTasks(),
+              child: ListView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                children: [
+                  _buildSearchField(context),
+                  _buildNoResults(context, activeFilter),
+                ],
+              ),
+            );
+          }
+
           return RefreshIndicator(
             onRefresh: () => ref.read(taskListProvider.notifier).loadTasks(),
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
+                _buildSearchField(context),
                 if (pinnedTasks.isNotEmpty) ...[
                   const Text(
                     'Pinned',
@@ -84,11 +121,18 @@ class TasksScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(
+          child: AppActionButton(
+            icon: Icons.refresh,
+            label: 'Try again',
+            onPressed: () => ref.read(taskListProvider.notifier).loadTasks(),
+          ),
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AppActionButton(
+        label: 'Add task',
+        icon: Icons.add,
         onPressed: () => _showCreateDialog(context, ref, categoriesState),
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -123,7 +167,90 @@ class TasksScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildSearchField(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => setState(() => _searchQuery = value),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'Search tasks',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _searchQuery.isEmpty
+              ? null
+              : IconButton(
+                  tooltip: 'Clear search',
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                  icon: const Icon(Icons.clear),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoResults(BuildContext context, TaskFilter filter) {
+    final hasSearch = _searchQuery.trim().isNotEmpty;
+    final title = hasSearch ? 'No matching tasks' : 'No tasks in this view';
+    final message = hasSearch
+        ? 'Try a different search term.'
+        : 'Choose another filter to see more tasks.';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+      child: Column(
+        children: [
+          Icon(
+            hasSearch ? Icons.search_off : Icons.filter_alt_off,
+            size: 56,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            message,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (filter != TaskFilter.all) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppActionButton(
+              primary: false,
+              label: 'Show all tasks',
+              onPressed: () => ref
+                  .read(taskFilterProvider.notifier)
+                  .setFilter(TaskFilter.all),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<TaskEntity> _filterBySearch(List<TaskEntity> tasks) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return tasks;
+
+    return tasks.where((task) {
+      return task.title.toLowerCase().contains(query) ||
+          (task.description?.toLowerCase().contains(query) ?? false);
+    }).toList();
+  }
+
+  Widget _buildEmptyState(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<CategoryEntity>> categoriesState,
+  ) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -131,7 +258,7 @@ class TasksScreen extends ConsumerWidget {
           Icon(
             Icons.check_box_outline_blank,
             size: 64,
-            color: AppColors.lightTextDisabled,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: AppSpacing.md),
           const Text(
@@ -141,7 +268,15 @@ class TasksScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Tap + to create your first task',
-            style: TextStyle(color: AppColors.lightTextSecondary),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppActionButton(
+            icon: Icons.add,
+            label: 'Create task',
+            onPressed: () => _showCreateDialog(context, ref, categoriesState),
           ),
         ],
       ),
@@ -154,8 +289,11 @@ class TasksScreen extends ConsumerWidget {
     AsyncValue<List<CategoryEntity>> categoriesState,
   ) {
     final categories = categoriesState.valueOrNull ?? [];
-    showDialog(
+    showModalBottomSheet<void>(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) => TaskDialog(
         categories: categories,
         onSave:
@@ -188,8 +326,11 @@ class TasksScreen extends ConsumerWidget {
     AsyncValue<List<CategoryEntity>> categoriesState,
   ) {
     final categories = categoriesState.valueOrNull ?? [];
-    showDialog(
+    showModalBottomSheet<void>(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
       builder: (context) => TaskDialog(
         task: task,
         categories: categories,
@@ -219,25 +360,27 @@ class TasksScreen extends ConsumerWidget {
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
-    showDialog(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Task'),
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (context) => AppBottomSheet(
+        title: 'Delete Task',
         content: const Text('Are you sure you want to delete this task?'),
         actions: [
-          TextButton(
+          AppActionButton(
+            primary: false,
+            label: 'Cancel',
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
           ),
-          TextButton(
+          const SizedBox(width: AppSpacing.sm),
+          AppActionButton(
+            label: 'Delete',
+            danger: true,
             onPressed: () {
               ref.read(taskListProvider.notifier).deleteTask(id);
               Navigator.pop(context);
             },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.error),
-            ),
           ),
         ],
       ),
@@ -247,36 +390,34 @@ class TasksScreen extends ConsumerWidget {
   void _showFilterSheet(BuildContext context, WidgetRef ref) {
     final currentFilter = ref.read(taskFilterProvider);
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Filter Tasks',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: TaskFilter.values.map((filter) {
-                final isSelected = currentFilter == filter;
-                return FilterChip(
-                  label: Text(_filterLabel(filter)),
-                  selected: isSelected,
-                  onSelected: (_) {
-                    ref.read(taskFilterProvider.notifier).setFilter(filter);
-                    Navigator.pop(context);
-                  },
-                );
-              }).toList(),
-            ),
-          ],
+      backgroundColor: Colors.transparent,
+      useSafeArea: true,
+      builder: (context) => AppBottomSheet(
+        title: 'Filter tasks',
+        content: Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: TaskFilter.values.map((filter) {
+            final isSelected = currentFilter == filter;
+            return FilterChip(
+              label: Text(_filterLabel(filter)),
+              selected: isSelected,
+              onSelected: (_) {
+                ref.read(taskFilterProvider.notifier).setFilter(filter);
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
         ),
+        actions: [
+          AppActionButton(
+            primary: false,
+            label: 'Close',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
       ),
     );
   }

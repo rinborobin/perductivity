@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/database/database.dart';
+import '../../../../shared/widgets/app_surface.dart';
+import '../../../../shared/widgets/app_action_button.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/providers/task_list_provider.dart';
 
@@ -13,21 +15,29 @@ class StatisticsScreen extends ConsumerWidget {
     final tasksState = ref.watch(taskListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Statistics'),
-      ),
+      appBar: AppBar(title: const Text('Statistics')),
       body: tasksState.when(
         data: (tasks) {
           if (tasks.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(context);
           }
 
-          final completed = tasks.where((t) => t.status == TaskStatus.completed).length;
-          final pending = tasks.where((t) => t.status == TaskStatus.todo).length;
-          final inProgress = tasks.where((t) => t.status == TaskStatus.inProgress).length;
-          final archived = tasks.where((t) => t.status == TaskStatus.archived).length;
+          final completed = tasks
+              .where((t) => t.status == TaskStatus.completed)
+              .length;
+          final pending = tasks
+              .where((t) => t.status == TaskStatus.todo)
+              .length;
+          final inProgress = tasks
+              .where((t) => t.status == TaskStatus.inProgress)
+              .length;
+          final archived = tasks
+              .where((t) => t.status == TaskStatus.archived)
+              .length;
           final total = tasks.length;
-          final completionRate = total > 0 ? (completed / total * 100).round() : 0;
+          final completionRate = total > 0
+              ? (completed / total * 100).round()
+              : 0;
 
           final weekData = _getWeeklyData(tasks);
           final priorityData = _getPriorityData(tasks);
@@ -37,29 +47,50 @@ class StatisticsScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.md),
               children: [
-                _buildCompletionRateCard(completionRate, completed, total),
+                _buildCompletionRateCard(
+                  context,
+                  completionRate,
+                  completed,
+                  total,
+                ),
                 const SizedBox(height: AppSpacing.md),
-                _buildStatusBreakdown(completed, pending, inProgress, archived),
+                _buildStatusBreakdown(
+                  context,
+                  completed,
+                  pending,
+                  inProgress,
+                  archived,
+                ),
                 const SizedBox(height: AppSpacing.md),
-                _buildWeeklyProgressCard(weekData),
+                _buildWeeklyProgressCard(context, weekData),
                 const SizedBox(height: AppSpacing.md),
-                _buildPriorityBreakdown(priorityData),
+                _buildPriorityBreakdown(context, priorityData),
               ],
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(
+          child: AppActionButton(
+            icon: Icons.refresh,
+            label: 'Try again',
+            onPressed: () => ref.read(taskListProvider.notifier).loadTasks(),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.bar_chart, size: 64, color: AppColors.lightTextDisabled),
+          Icon(
+            Icons.bar_chart,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: AppSpacing.md),
           const Text(
             'No data yet',
@@ -68,25 +99,30 @@ class StatisticsScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Complete some tasks to see statistics',
-            style: TextStyle(color: AppColors.lightTextSecondary),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCompletionRateCard(int rate, int completed, int total) {
-    return Card(
+  Widget _buildCompletionRateCard(
+    BuildContext context,
+    int rate,
+    int completed,
+    int total,
+  ) {
+    return AppSurface(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
             const Text(
               'Completion Rate',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: AppSpacing.md),
             SizedBox(
@@ -101,7 +137,9 @@ class StatisticsScreen extends ConsumerWidget {
                     child: CircularProgressIndicator(
                       value: rate / 100,
                       strokeWidth: 10,
-                      backgroundColor: AppColors.lightSurfaceVariant,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerHighest,
                       color: AppColors.primary,
                     ),
                   ),
@@ -125,7 +163,7 @@ class StatisticsScreen extends ConsumerWidget {
               '$completed of $total tasks completed',
               style: TextStyle(
                 fontSize: 12,
-                color: AppColors.lightTextSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -134,8 +172,15 @@ class StatisticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusBreakdown(int completed, int pending, int inProgress, int archived) {
-    return Card(
+  Widget _buildStatusBreakdown(
+    BuildContext context,
+    int completed,
+    int pending,
+    int inProgress,
+    int archived,
+  ) {
+    return AppSurface(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -146,20 +191,44 @@ class StatisticsScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: AppSpacing.md),
-            _StatusRow(label: 'Completed', count: completed, color: AppColors.success, icon: Icons.check_circle),
-            _StatusRow(label: 'Pending', count: pending, color: AppColors.warning, icon: Icons.pending),
-            _StatusRow(label: 'In Progress', count: inProgress, color: AppColors.info, icon: Icons.play_circle),
-            _StatusRow(label: 'Archived', count: archived, color: AppColors.lightTextDisabled, icon: Icons.archive),
+            _StatusRow(
+              label: 'Completed',
+              count: completed,
+              color: AppColors.success,
+              icon: Icons.check_circle,
+            ),
+            _StatusRow(
+              label: 'Pending',
+              count: pending,
+              color: AppColors.warning,
+              icon: Icons.pending,
+            ),
+            _StatusRow(
+              label: 'In Progress',
+              count: inProgress,
+              color: AppColors.info,
+              icon: Icons.play_circle,
+            ),
+            _StatusRow(
+              label: 'Archived',
+              count: archived,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              icon: Icons.archive,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWeeklyProgressCard(Map<String, int> weekData) {
+  Widget _buildWeeklyProgressCard(
+    BuildContext context,
+    Map<String, int> weekData,
+  ) {
     final maxValue = weekData.values.fold<int>(0, (a, b) => a > b ? a : b);
 
-    return Card(
+    return AppSurface(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -175,7 +244,9 @@ class StatisticsScreen extends ConsumerWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: weekData.entries.map((entry) {
-                  final height = maxValue > 0 ? (entry.value / maxValue) * 120 : 0.0;
+                  final height = maxValue > 0
+                      ? (entry.value / maxValue) * 120
+                      : 0.0;
                   return Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -199,7 +270,9 @@ class StatisticsScreen extends ConsumerWidget {
                             entry.key,
                             style: TextStyle(
                               fontSize: 10,
-                              color: AppColors.lightTextSecondary,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -215,10 +288,14 @@ class StatisticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPriorityBreakdown(Map<TaskPriority, int> data) {
+  Widget _buildPriorityBreakdown(
+    BuildContext context,
+    Map<TaskPriority, int> data,
+  ) {
     final total = data.values.fold<int>(0, (a, b) => a + b);
 
-    return Card(
+    return AppSurface(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -304,10 +381,7 @@ class _StatusRow extends StatelessWidget {
           Icon(icon, size: 20, color: color),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text(label)),
-          Text(
-            '$count',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          Text('$count', style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -338,10 +412,7 @@ class _PriorityRow extends StatelessWidget {
           Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(child: Text(label)),
@@ -353,7 +424,9 @@ class _PriorityRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.pill),
               child: LinearProgressIndicator(
                 value: percentage,
-                backgroundColor: AppColors.lightSurfaceVariant,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
                 color: color,
                 minHeight: 6,
               ),

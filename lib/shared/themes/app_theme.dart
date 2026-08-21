@@ -22,6 +22,8 @@ class AppTheme {
       textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
       cardTheme: CardThemeData(
         elevation: 1,
+        color: AppColors.lightSurface,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
@@ -89,12 +91,11 @@ class AppTheme {
           vertical: AppSpacing.sm + 4,
         ),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      navigationBarTheme: NavigationBarThemeData(
+        height: 72,
         backgroundColor: AppColors.lightSurface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.lightTextSecondary,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        elevation: 2,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
@@ -141,6 +142,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 1,
         color: AppColors.darkSurface,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
@@ -208,12 +210,11 @@ class AppTheme {
           vertical: AppSpacing.sm + 4,
         ),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      navigationBarTheme: NavigationBarThemeData(
+        height: 72,
         backgroundColor: AppColors.darkSurface,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.darkTextSecondary,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.2),
+        elevation: 2,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,

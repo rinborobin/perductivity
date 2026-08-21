@@ -6,6 +6,7 @@ import '../features/calendar/presentation/screens/calendar_screen.dart';
 import '../features/statistics/presentation/screens/statistics_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/categories/presentation/screens/categories_screen.dart';
+import '../shared/widgets/app_navigation_dock.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -22,33 +23,28 @@ final GoRouter appRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/home',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: HomeScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: HomeScreen()),
         ),
         GoRoute(
           path: '/tasks',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: TasksScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: TasksScreen()),
         ),
         GoRoute(
           path: '/calendar',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: CalendarScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: CalendarScreen()),
         ),
         GoRoute(
           path: '/statistics',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: StatisticsScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: StatisticsScreen()),
         ),
         GoRoute(
           path: '/settings',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: SettingsScreen(),
-          ),
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: SettingsScreen()),
           routes: [
             GoRoute(
               path: 'categories',
@@ -100,36 +96,9 @@ class ScaffoldWithNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _calculateSelectedIndex(context),
-        onTap: (index) => _onItemTapped(context, index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.check_box_outlined),
-            activeIcon: Icon(Icons.check_box),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_outlined),
-            activeIcon: Icon(Icons.bar_chart),
-            label: 'Statistics',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+      bottomNavigationBar: AppNavigationDock(
+        selectedIndex: _calculateSelectedIndex(context),
+        onSelected: (index) => _onItemTapped(context, index),
       ),
     );
   }

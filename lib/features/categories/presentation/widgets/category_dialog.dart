@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/constants.dart';
 import '../../domain/entities/category_entity.dart';
+import '../../../../shared/widgets/app_action_button.dart';
+import '../../../../shared/widgets/app_bottom_sheet.dart';
 import 'category_icon.dart';
 
 class CategoryDialog extends StatefulWidget {
@@ -63,130 +65,134 @@ class _CategoryDialogState extends State<CategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        widget.category == null ? 'Create Category' : 'Edit Category',
-      ),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Category Name',
-                hintText: 'Enter category name',
+    return AppBottomSheet(
+      title: widget.category == null ? 'Create Category' : 'Edit Category',
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Category Name',
+                  hintText: 'Enter category name',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a name';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: Color(
-                  int.parse('0xFF$_selectedColor'),
-                ).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
                   color: Color(
                     int.parse('0xFF$_selectedColor'),
-                  ).withValues(alpha: 0.3),
+                  ).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: Color(
+                      int.parse('0xFF$_selectedColor'),
+                    ).withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Color(int.parse('0xFF$_selectedColor')),
+                      child: Icon(
+                        categoryIconFromString(_selectedIcon),
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        _nameController.text.isEmpty
+                            ? 'Preview category'
+                            : _nameController.text,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Color(int.parse('0xFF$_selectedColor')),
-                    child: Icon(
-                      categoryIconFromString(_selectedIcon),
-                      color: Colors.white,
+              const SizedBox(height: AppSpacing.md),
+              const Text('Color'),
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.sm,
+                children: _colors.map((color) {
+                  final isSelected = _selectedColor == color;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedColor = color),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Color(int.parse('0xFF$color')),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isSelected ? Colors.white : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      _nameController.text.isEmpty
-                          ? 'Preview category'
-                          : _nameController.text,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const Text('Color'),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              children: _colors.map((color) {
-                final isSelected = _selectedColor == color;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedColor = color),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Color(int.parse('0xFF$color')),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected ? Colors.white : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const Text('Icon'),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              children: _icons.map((icon) {
-                final isSelected = _selectedIcon == icon.toString();
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedIcon = icon.toString()),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary.withValues(alpha: 0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(
+              const SizedBox(height: AppSpacing.md),
+              const Text('Icon'),
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.sm,
+                children: _icons.map((icon) {
+                  final isSelected = _selectedIcon == icon.toString();
+                  return GestureDetector(
+                    onTap: () =>
+                        setState(() => _selectedIcon = icon.toString()),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
                         color: isSelected
-                            ? AppColors.primary
-                            : AppColors.lightBorder,
+                            ? AppColors.primary.withValues(alpha: 0.2)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                      child: Icon(
+                        categoryIconFromString(icon.toString()),
+                        color: isSelected ? AppColors.primary : null,
                       ),
                     ),
-                    child: Icon(
-                      categoryIconFromString(icon.toString()),
-                      color: isSelected ? AppColors.primary : null,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
-        TextButton(
+        AppActionButton(
+          primary: false,
+          label: 'Cancel',
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
         ),
-        ElevatedButton(
+        const SizedBox(width: AppSpacing.sm),
+        AppActionButton(
+          label: 'Save',
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               widget.onSave(
@@ -197,7 +203,6 @@ class _CategoryDialogState extends State<CategoryDialog> {
               Navigator.pop(context);
             }
           },
-          child: const Text('Save'),
         ),
       ],
     );

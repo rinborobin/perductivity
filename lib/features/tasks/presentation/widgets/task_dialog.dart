@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/database/database.dart';
+import '../../../../shared/widgets/app_action_button.dart';
+import '../../../../shared/widgets/app_bottom_sheet.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../../categories/domain/entities/category_entity.dart';
 
@@ -14,7 +16,8 @@ class TaskDialog extends StatefulWidget {
     required TaskPriority priority,
     DateTime? dueDate,
     TaskStatus? status,
-  }) onSave;
+  })
+  onSave;
 
   const TaskDialog({
     required this.onSave,
@@ -40,8 +43,12 @@ class _TaskDialogState extends State<TaskDialog> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.task?.title ?? '');
-    _descriptionController = TextEditingController(text: widget.task?.description ?? '');
-    _selectedCategoryId = widget.task?.categoryId ?? (widget.categories.isNotEmpty ? widget.categories.first.id! : 0);
+    _descriptionController = TextEditingController(
+      text: widget.task?.description ?? '',
+    );
+    _selectedCategoryId =
+        widget.task?.categoryId ??
+        (widget.categories.isNotEmpty ? widget.categories.first.id! : 0);
     _selectedPriority = widget.task?.priority ?? TaskPriority.medium;
     _selectedStatus = widget.task?.status;
     _selectedDueDate = widget.task?.dueDate;
@@ -57,20 +64,23 @@ class _TaskDialogState extends State<TaskDialog> {
   @override
   Widget build(BuildContext context) {
     if (widget.categories.isEmpty) {
-      return AlertDialog(
-        title: const Text('No Categories'),
-        content: const Text('Please create a category first before adding tasks.'),
+      return AppBottomSheet(
+        title: 'No Categories',
+        content: const Text(
+          'Please create a category first before adding tasks.',
+        ),
         actions: [
-          TextButton(
+          AppActionButton(
+            primary: false,
+            label: 'OK',
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
           ),
         ],
       );
     }
 
-    return AlertDialog(
-      title: Text(widget.task == null ? 'Create Task' : 'Edit Task'),
+    return AppBottomSheet(
+      title: widget.task == null ? 'Create Task' : 'Edit Task',
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -106,7 +116,10 @@ class _TaskDialogState extends State<TaskDialog> {
               DropdownButtonFormField<int>(
                 initialValue: _selectedCategoryId,
                 decoration: const InputDecoration(
-                  contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
                 ),
                 items: widget.categories.map((category) {
                   return DropdownMenuItem(
@@ -137,9 +150,13 @@ class _TaskDialogState extends State<TaskDialog> {
                             setState(() => _selectedPriority = priority);
                           }
                         },
-                        selectedColor: _getPriorityColor(priority).withValues(alpha: 0.2),
+                        selectedColor: _getPriorityColor(
+                          priority,
+                        ).withValues(alpha: 0.2),
                         labelStyle: TextStyle(
-                          color: isSelected ? _getPriorityColor(priority) : null,
+                          color: isSelected
+                              ? _getPriorityColor(priority)
+                              : null,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -155,7 +172,10 @@ class _TaskDialogState extends State<TaskDialog> {
                 DropdownButtonFormField<TaskStatus>(
                   initialValue: _selectedStatus,
                   decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
                   ),
                   items: TaskStatus.values.map((status) {
                     return DropdownMenuItem(
@@ -178,7 +198,9 @@ class _TaskDialogState extends State<TaskDialog> {
                   final date = await showDatePicker(
                     context: context,
                     initialDate: _selectedDueDate ?? DateTime.now(),
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    firstDate: DateTime.now().subtract(
+                      const Duration(days: 365),
+                    ),
                     lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
                   );
                   if (date != null) {
@@ -188,7 +210,9 @@ class _TaskDialogState extends State<TaskDialog> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.lightBorder),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Row(
@@ -204,7 +228,8 @@ class _TaskDialogState extends State<TaskDialog> {
                       if (_selectedDueDate != null)
                         IconButton(
                           icon: const Icon(Icons.clear, size: 16),
-                          onPressed: () => setState(() => _selectedDueDate = null),
+                          onPressed: () =>
+                              setState(() => _selectedDueDate = null),
                         ),
                     ],
                   ),
@@ -215,16 +240,21 @@ class _TaskDialogState extends State<TaskDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        AppActionButton(
+          primary: false,
+          label: 'Cancel',
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
         ),
-        ElevatedButton(
+        const SizedBox(width: AppSpacing.sm),
+        AppActionButton(
+          label: 'Save',
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               widget.onSave(
                 title: _titleController.text,
-                description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+                description: _descriptionController.text.isEmpty
+                    ? null
+                    : _descriptionController.text,
                 categoryId: _selectedCategoryId,
                 priority: _selectedPriority,
                 dueDate: _selectedDueDate,
@@ -233,7 +263,6 @@ class _TaskDialogState extends State<TaskDialog> {
               Navigator.pop(context);
             }
           },
-          child: const Text('Save'),
         ),
       ],
     );

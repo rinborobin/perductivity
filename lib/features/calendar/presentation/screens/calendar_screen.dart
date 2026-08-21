@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/database/database.dart';
+import '../../../../shared/widgets/app_action_button.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/providers/task_list_provider.dart';
 import '../../../categories/presentation/providers/category_list_provider.dart';
@@ -17,7 +18,7 @@ class CalendarScreen extends ConsumerStatefulWidget {
 
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedMonth = DateTime.now();
-  DateTime? _selectedDate;
+  DateTime? _selectedDate = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -25,33 +26,38 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final categoriesState = ref.watch(categoryListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendar'),
-      ),
+      appBar: AppBar(title: const Text('Calendar')),
       body: tasksState.when(
         data: (tasks) {
           final categories = categoriesState.valueOrNull ?? [];
           return Column(
             children: [
               _buildMonthHeader(),
-              _buildWeekdayLabels(),
-              _buildCalendarGrid(tasks),
+              _buildWeekdayLabels(context),
+              _buildCalendarGrid(context, tasks),
               const Divider(),
-              Expanded(
-                child: _buildSelectedDayTasks(tasks, categories),
-              ),
+              Expanded(child: _buildSelectedDayTasks(tasks, categories)),
             ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
+        error: (error, _) => Center(
+          child: AppActionButton(
+            icon: Icons.refresh,
+            label: 'Try again',
+            onPressed: () => ref.read(taskListProvider.notifier).loadTasks(),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildMonthHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -59,22 +65,35 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             icon: const Icon(Icons.chevron_left),
             onPressed: () {
               setState(() {
-                _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
+                _focusedMonth = DateTime(
+                  _focusedMonth.year,
+                  _focusedMonth.month - 1,
+                );
               });
             },
           ),
           Text(
             DateFormat('MMMM yyyy').format(_focusedMonth),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          IconButton(
+            tooltip: 'Today',
+            icon: const Icon(Icons.today),
+            onPressed: () {
+              setState(() {
+                _focusedMonth = DateTime.now();
+                _selectedDate = DateTime.now();
+              });
+            },
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right),
             onPressed: () {
               setState(() {
-                _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
+                _focusedMonth = DateTime(
+                  _focusedMonth.year,
+                  _focusedMonth.month + 1,
+                );
               });
             },
           ),
@@ -83,7 +102,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildWeekdayLabels() {
+  Widget _buildWeekdayLabels(BuildContext context) {
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
@@ -96,7 +115,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.lightTextSecondary,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -106,13 +125,25 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendarGrid(List<TaskEntity> tasks) {
-    final firstDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
-    final lastDayOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+  Widget _buildCalendarGrid(BuildContext context, List<TaskEntity> tasks) {
+    final firstDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month,
+      1,
+    );
+    final lastDayOfMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month + 1,
+      0,
+    );
     final startWeekday = firstDayOfMonth.weekday;
     final daysInMonth = lastDayOfMonth.day;
 
-    final previousMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 0);
+    final previousMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month - 1,
+      0,
+    );
     final daysFromPrevMonth = startWeekday - 1;
 
     final totalCells = ((daysFromPrevMonth + daysInMonth) / 7).ceil() * 7;
@@ -133,18 +164,37 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           bool isCurrentMonth;
 
           if (index < daysFromPrevMonth) {
-            date = DateTime(previousMonth.year, previousMonth.month, previousMonth.day - daysFromPrevMonth + index + 1);
+            date = DateTime(
+              previousMonth.year,
+              previousMonth.month,
+              previousMonth.day - daysFromPrevMonth + index + 1,
+            );
             isCurrentMonth = false;
           } else if (index >= daysFromPrevMonth + daysInMonth) {
-            date = DateTime(_focusedMonth.year, _focusedMonth.month + 1, index - daysFromPrevMonth - daysInMonth + 1);
+            date = DateTime(
+              _focusedMonth.year,
+              _focusedMonth.month + 1,
+              index - daysFromPrevMonth - daysInMonth + 1,
+            );
             isCurrentMonth = false;
           } else {
-            date = DateTime(_focusedMonth.year, _focusedMonth.month, index - daysFromPrevMonth + 1);
+            date = DateTime(
+              _focusedMonth.year,
+              _focusedMonth.month,
+              index - daysFromPrevMonth + 1,
+            );
             isCurrentMonth = true;
           }
 
-          final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
-          final isSelected = _selectedDate != null && date.year == _selectedDate!.year && date.month == _selectedDate!.month && date.day == _selectedDate!.day;
+          final isToday =
+              date.year == today.year &&
+              date.month == today.month &&
+              date.day == today.day;
+          final isSelected =
+              _selectedDate != null &&
+              date.year == _selectedDate!.year &&
+              date.month == _selectedDate!.month &&
+              date.day == _selectedDate!.day;
           final taskCount = _getTaskCountForDate(tasks, date);
 
           return GestureDetector(
@@ -159,8 +209,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 color: isSelected
                     ? AppColors.primary
                     : isToday
-                        ? AppColors.primary.withValues(alpha: 0.1)
-                        : Colors.transparent,
+                    ? AppColors.primary.withValues(alpha: 0.1)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 border: isToday && !isSelected
                     ? Border.all(color: AppColors.primary, width: 1)
@@ -173,12 +223,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     '${date.day}',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: isToday || isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isToday || isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       color: isSelected
                           ? Colors.white
                           : isCurrentMonth
-                              ? null
-                              : AppColors.lightTextDisabled,
+                          ? null
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                   if (taskCount > 0)
@@ -205,7 +257,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       return Center(
         child: Text(
           'Select a date to view tasks',
-          style: TextStyle(color: AppColors.lightTextSecondary),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }
@@ -217,11 +271,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.event_available, size: 48, color: AppColors.lightTextDisabled),
+            Icon(
+              Icons.event_available,
+              size: 48,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'No tasks for ${DateFormat('MMM d').format(_selectedDate!)}',
-              style: TextStyle(color: AppColors.lightTextSecondary),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -237,7 +297,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         ...dayTasks.map((task) {
-          final category = categories.where((c) => c.id == task.categoryId).firstOrNull;
+          final category = categories
+              .where((c) => c.id == task.categoryId)
+              .firstOrNull;
           return TaskCard(
             task: task,
             categoryName: category?.name,
@@ -258,14 +320,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   int _getTaskCountForDate(List<TaskEntity> tasks, DateTime date) {
     return tasks.where((t) {
       if (t.dueDate == null) return false;
-      return t.dueDate!.year == date.year && t.dueDate!.month == date.month && t.dueDate!.day == date.day;
+      return t.dueDate!.year == date.year &&
+          t.dueDate!.month == date.month &&
+          t.dueDate!.day == date.day;
     }).length;
   }
 
   List<TaskEntity> _getTasksForDate(List<TaskEntity> tasks, DateTime date) {
     return tasks.where((t) {
       if (t.dueDate == null) return false;
-      return t.dueDate!.year == date.year && t.dueDate!.month == date.month && t.dueDate!.day == date.day;
+      return t.dueDate!.year == date.year &&
+          t.dueDate!.month == date.month &&
+          t.dueDate!.day == date.day;
     }).toList();
   }
 }

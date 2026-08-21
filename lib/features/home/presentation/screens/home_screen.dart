@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/database/database.dart';
+import '../../../categories/domain/entities/category_entity.dart';
+import '../../../categories/presentation/providers/category_list_provider.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/providers/task_list_provider.dart';
 import '../../../tasks/presentation/widgets/task_card.dart';
-import '../../../categories/presentation/providers/category_list_provider.dart';
+import '../../../tasks/presentation/widgets/task_dialog.dart';
+import '../../../../shared/widgets/app_action_button.dart';
+import '../../../../shared/widgets/app_surface.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -24,8 +29,12 @@ class HomeScreen extends ConsumerWidget {
             final now = DateTime.now();
             final todayTasks = _getTodayTasks(tasks, now);
             final upcomingTasks = _getUpcomingTasks(tasks, now);
+            final unscheduledTasks = _getUnscheduledTasks(tasks);
             final completedToday = _getCompletedToday(tasks, now);
-            final pendingCount = tasks.where((t) => t.status != TaskStatus.completed && t.status != TaskStatus.archived).length;
+            final pendingCount = tasks.where((task) {
+              return task.status != TaskStatus.completed &&
+                  task.status != TaskStatus.archived;
+            }).length;
 
             return RefreshIndicator(
               onRefresh: () async {
@@ -33,178 +42,479 @@ class HomeScreen extends ConsumerWidget {
                 await ref.read(categoryListProvider.notifier).loadCategories();
               },
               child: ListView(
-                padding: const EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.xxl,
+                ),
                 children: [
-                  _buildHeader(now),
+                  _buildHeader(context, now),
                   const SizedBox(height: AppSpacing.lg),
-                  _buildStatsCards(pendingCount, completedToday.length, todayTasks.length),
+                  _buildPrimaryAction(context, ref, categoriesState),
                   const SizedBox(height: AppSpacing.lg),
-                  if (todayTasks.isNotEmpty) ...[
-                    _buildSectionHeader("Today's Tasks", todayTasks.length.toString()),
+                  _buildOverview(
+                    pendingCount: pendingCount,
+                    completedToday: completedToday.length,
+                    dueToday: todayTasks.length,
+                    completedDueToday: todayTasks
+                        .where((task) => task.status == TaskStatus.completed)
+                        .length,
+                  ),
+                  if (tasks.isEmpty)
+                    _buildFirstTaskState(context, ref, categoriesState),
+                  if (tasks.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionHeader(
+                      context,
+                      'Today',
+                      todayTasks.length,
+                      onViewAll: todayTasks.length > 5
+                          ? () => context.go('/tasks')
+                          : null,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
-                    ...todayTasks.take(5).map((task) {
-                      final category = categories.where((c) => c.id == task.categoryId).firstOrNull;
-                      return TaskCard(
-                        task: task,
-                        categoryName: category?.name,
-                        categoryColor: category?.color,
-                        onToggleComplete: () {
-                          if (task.status == TaskStatus.completed) {
-                            ref.read(taskListProvider.notifier).uncompleteTask(task.id!);
-                          } else {
-                            ref.read(taskListProvider.notifier).completeTask(task.id!);
-                          }
-                        },
-                      );
-                    }),
-                    const SizedBox(height: AppSpacing.lg),
+                    if (todayTasks.isEmpty)
+                      _buildSectionEmpty(
+                        context: context,
+                        icon: Icons.wb_sunny_outlined,
+                        title: 'Nothing scheduled today',
+                        message: 'Add a task to make a plan for your day.',
+                        onAction: () =>
+                            _showCreateTask(context, ref, categoriesState),
+                      )
+                    else
+                      ...todayTasks
+                          .take(5)
+                          .map(
+                            (task) =>
+                                _buildTaskCard(context, ref, task, categories),
+                          ),
+                    if (upcomingTasks.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xl),
+                      _buildSectionHeader(
+                        context,
+                        'Upcoming',
+                        upcomingTasks.length,
+                        onViewAll: () => context.go('/tasks'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      ...upcomingTasks
+                          .take(5)
+                          .map(
+                            (task) =>
+                                _buildTaskCard(context, ref, task, categories),
+                          ),
+                    ],
+                    if (unscheduledTasks.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xl),
+                      _buildSectionHeader(
+                        context,
+                        'No date',
+                        unscheduledTasks.length,
+                        onViewAll: () => context.go('/tasks'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      ...unscheduledTasks
+                          .take(5)
+                          .map(
+                            (task) =>
+                                _buildTaskCard(context, ref, task, categories),
+                          ),
+                    ],
                   ],
-                  if (upcomingTasks.isNotEmpty) ...[
-                    _buildSectionHeader('Upcoming', upcomingTasks.length.toString()),
-                    const SizedBox(height: AppSpacing.sm),
-                    ...upcomingTasks.take(5).map((task) {
-                      final category = categories.where((c) => c.id == task.categoryId).firstOrNull;
-                      return TaskCard(
-                        task: task,
-                        categoryName: category?.name,
-                        categoryColor: category?.color,
-                        onToggleComplete: () {
-                          ref.read(taskListProvider.notifier).completeTask(task.id!);
-                        },
-                      );
-                    }),
-                  ],
-                  if (tasks.isEmpty) _buildEmptyState(),
                 ],
               ),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Error: $error')),
+          error: (error, _) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Unable to load your tasks'),
+                const SizedBox(height: AppSpacing.sm),
+                AppActionButton(
+                  icon: Icons.refresh,
+                  label: 'Try again',
+                  onPressed: () =>
+                      ref.read(taskListProvider.notifier).loadTasks(),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeader(DateTime now) {
+  Widget _buildHeader(BuildContext context, DateTime now) {
     final hour = now.hour;
-    String greeting;
-    if (hour < 12) {
-      greeting = 'Good Morning';
-    } else if (hour < 17) {
-      greeting = 'Good Afternoon';
-    } else {
-      greeting = 'Good Evening';
-    }
+    final greeting = hour < 12
+        ? 'Good morning'
+        : hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           greeting,
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           DateFormat('EEEE, MMMM d').format(now),
           style: TextStyle(
-            fontSize: 14,
-            color: AppColors.lightTextSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatsCards(int pending, int completedToday, int todayTotal) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            label: 'Pending',
-            value: pending.toString(),
-            icon: Icons.pending_actions,
-            color: AppColors.warning,
-          ),
+  Widget _buildPrimaryAction(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<CategoryEntity>> categoriesState,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AppSurface(
+      color: colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Plan your next step',
+              style: TextStyle(
+                color: colorScheme.onPrimaryContainer,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Keep your day moving with one clear task.',
+              style: TextStyle(
+                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.75),
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppActionButton(
+              primary: true,
+              onPressed: () => _showCreateTask(context, ref, categoriesState),
+              icon: Icons.add,
+              label: 'Add task',
+            ),
+          ],
         ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _StatCard(
-            label: 'Done Today',
-            value: completedToday.toString(),
-            icon: Icons.check_circle,
-            color: AppColors.success,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: _StatCard(
-            label: 'Today',
-            value: todayTotal.toString(),
-            icon: Icons.today,
-            color: AppColors.primary,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildSectionHeader(String title, String count) {
+  Widget _buildOverview({
+    required int pendingCount,
+    required int completedToday,
+    required int dueToday,
+    required int completedDueToday,
+  }) {
+    final progress = dueToday == 0 ? 0.0 : completedDueToday / dueToday;
+
+    return AppSurface(
+      padding: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Today's focus",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  '$completedDueToday/$dueToday done',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                _OverviewMetric(
+                  label: 'Pending',
+                  value: pendingCount.toString(),
+                  color: AppColors.warning,
+                ),
+                _OverviewMetric(
+                  label: 'Due today',
+                  value: dueToday.toString(),
+                  color: AppColors.primary,
+                ),
+                _OverviewMetric(
+                  label: 'Done today',
+                  value: completedToday.toString(),
+                  color: AppColors.success,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    int count, {
+    VoidCallback? onViewAll,
+  }) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
+        const SizedBox(width: AppSpacing.sm),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: 2,
+          ),
           decoration: BoxDecoration(
             color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),
           child: Text(
-            count,
+            count.toString(),
             style: const TextStyle(
-              fontSize: 12,
               color: AppColors.primary,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
+        const Spacer(),
+        if (onViewAll != null)
+          AppActionButton(
+            primary: false,
+            label: 'View all',
+            onPressed: onViewAll,
+          ),
       ],
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
+  Widget _buildTaskCard(
+    BuildContext context,
+    WidgetRef ref,
+    TaskEntity task,
+    List<CategoryEntity> categories,
+  ) {
+    final category = categories
+        .where((item) => item.id == task.categoryId)
+        .firstOrNull;
+
+    return TaskCard(
+      task: task,
+      categoryName: category?.name,
+      categoryColor: category?.color,
+      onTap: () => _showEditTask(context, ref, task, categories),
+      onToggleComplete: () {
+        if (task.status == TaskStatus.completed) {
+          ref.read(taskListProvider.notifier).uncompleteTask(task.id!);
+        } else {
+          ref.read(taskListProvider.notifier).completeTask(task.id!);
+        }
+      },
+    );
+  }
+
+  Widget _buildSectionEmpty({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String message,
+    required VoidCallback onAction,
+  }) {
+    return AppSurface(
+      padding: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-        child: Column(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Row(
           children: [
             Icon(
-              Icons.wb_sunny_outlined,
-              size: 64,
-              color: AppColors.lightTextDisabled,
+              icon,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              size: 32,
             ),
-            const SizedBox(height: AppSpacing.md),
-            const Text(
-              'All caught up!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(message, style: const TextStyle(fontSize: 12)),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'No tasks for today',
-              style: TextStyle(color: AppColors.lightTextSecondary),
+            IconButton(
+              onPressed: onAction,
+              tooltip: 'Add task',
+              icon: const Icon(Icons.add_circle_outline),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildFirstTaskState(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<CategoryEntity>> categoriesState,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xl),
+      child: Column(
+        children: [
+          const Icon(Icons.task_alt, size: 56, color: AppColors.primary),
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            'Start with one task',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            'Create a small next step and build momentum.',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppActionButton(
+            onPressed: () => _showCreateTask(context, ref, categoriesState),
+            icon: Icons.add,
+            label: 'Create your first task',
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCreateTask(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<CategoryEntity>> categoriesState,
+  ) {
+    final categories = categoriesState.valueOrNull ?? [];
+    if (categories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Create a category before adding a task.'),
+          action: SnackBarAction(
+            label: 'SET UP',
+            onPressed: () => context.push('/settings/categories'),
+          ),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => TaskDialog(
+        categories: categories,
+        onSave:
+            ({
+              required title,
+              description,
+              required categoryId,
+              required priority,
+              dueDate,
+              status,
+            }) {
+              ref
+                  .read(taskListProvider.notifier)
+                  .createTask(
+                    title: title,
+                    description: description,
+                    categoryId: categoryId,
+                    priority: priority,
+                    dueDate: dueDate,
+                  );
+            },
+      ),
+    );
+  }
+
+  void _showEditTask(
+    BuildContext context,
+    WidgetRef ref,
+    TaskEntity task,
+    List<CategoryEntity> categories,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => TaskDialog(
+        task: task,
+        categories: categories,
+        onSave:
+            ({
+              required title,
+              description,
+              required categoryId,
+              required priority,
+              dueDate,
+              status,
+            }) {
+              ref
+                  .read(taskListProvider.notifier)
+                  .updateTask(
+                    id: task.id!,
+                    title: title,
+                    description: description,
+                    categoryId: categoryId,
+                    priority: priority,
+                    status: status ?? task.status,
+                    dueDate: dueDate,
+                  );
+            },
       ),
     );
   }
@@ -213,74 +523,96 @@ class HomeScreen extends ConsumerWidget {
     final startOfDay = DateTime(now.year, now.month, now.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    return tasks.where((t) {
-      if (t.status == TaskStatus.archived) return false;
-      if (t.dueDate == null) return false;
-      return t.dueDate!.isAfter(startOfDay) && t.dueDate!.isBefore(endOfDay);
+    return tasks.where((task) {
+      if (task.status == TaskStatus.archived || task.dueDate == null) {
+        return false;
+      }
+      return !task.dueDate!.isBefore(startOfDay) &&
+          task.dueDate!.isBefore(endOfDay);
     }).toList();
   }
 
   List<TaskEntity> _getUpcomingTasks(List<TaskEntity> tasks, DateTime now) {
-    final endOfToday = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+    final endOfToday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).add(const Duration(days: 1));
 
-    return tasks.where((t) {
-      if (t.status == TaskStatus.completed || t.status == TaskStatus.archived) return false;
-      if (t.dueDate == null) return false;
-      return t.dueDate!.isAfter(endOfToday);
-    }).toList()
-      ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+    return tasks.where((task) {
+      if (task.status == TaskStatus.completed ||
+          task.status == TaskStatus.archived ||
+          task.dueDate == null) {
+        return false;
+      }
+      return !task.dueDate!.isBefore(endOfToday);
+    }).toList()..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+  }
+
+  List<TaskEntity> _getUnscheduledTasks(List<TaskEntity> tasks) {
+    return tasks.where((task) {
+      return task.dueDate == null &&
+          task.status != TaskStatus.completed &&
+          task.status != TaskStatus.archived;
+    }).toList();
   }
 
   List<TaskEntity> _getCompletedToday(List<TaskEntity> tasks, DateTime now) {
     final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    return tasks.where((t) {
-      if (t.status != TaskStatus.completed) return false;
-      if (t.completedAt == null) return false;
-      return t.completedAt!.isAfter(startOfDay);
+    return tasks.where((task) {
+      if (task.status != TaskStatus.completed || task.completedAt == null) {
+        return false;
+      }
+      return !task.completedAt!.isBefore(startOfDay) &&
+          task.completedAt!.isBefore(endOfDay);
     }).toList();
   }
 }
 
-class _StatCard extends StatelessWidget {
+class _OverviewMetric extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
   final Color color;
 
-  const _StatCard({
+  const _OverviewMetric({
     required this.label,
     required this.value,
-    required this.icon,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+    return Expanded(
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.lightTextSecondary,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
