@@ -1,17 +1,55 @@
-# perductivity
+# Perductivity
 
-A new Flutter project.
+Perductivity is an offline-first Flutter productivity app for managing tasks,
+categories, schedules, and progress in one workspace.
 
-## Getting Started
+## Current Features
 
-This project is a starting point for a Flutter application.
+- Task creation, editing, completion, archiving, pinning, and deletion
+- Task filtering by status, due date, and pinned state
+- Category management with colors and icons
+- Home dashboard with today's tasks and upcoming deadlines
+- Monthly calendar with task indicators
+- Completion and priority statistics
+- Light, dark, and system themes
+- Local persistence with Drift and SQLite
 
-A few resources to get you started if this is your first Flutter project:
+## Development
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Requirements:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Flutter SDK compatible with Dart `3.12.2` or newer within the declared SDK range
+
+Install dependencies and run checks:
+
+```bash
+flutter pub get
+dart analyze
+flutter test
+flutter run
+```
+
+The application is designed to work without an internet connection after its
+dependencies have been installed.
+
+## Architecture
+
+The codebase follows a feature-first structure with Riverpod state management,
+GoRouter navigation, repository abstractions, and Drift data sources:
+
+```text
+lib/
+├── app/
+├── core/
+├── shared/
+└── features/
+    ├── home/
+    ├── tasks/
+    ├── categories/
+    ├── calendar/
+    ├── statistics/
+    └── settings/
+```
+
+Product, design, schema, architecture, and engineering guidance is maintained
+in the `context/` directory.
