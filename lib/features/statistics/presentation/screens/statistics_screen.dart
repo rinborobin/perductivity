@@ -241,45 +241,56 @@ class StatisticsScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             SizedBox(
               height: 150,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: weekData.entries.map((entry) {
-                  final height = maxValue > 0
-                      ? (entry.value / maxValue) * 120
-                      : 0.0;
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(
-                            '${entry.value}',
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            height: height.clamp(4.0, 120.0),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            entry.key,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxBarHeight = (constraints.maxHeight - 40).clamp(
+                    4.0,
+                    120.0,
                   );
-                }).toList(),
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: weekData.entries.map((entry) {
+                      final height = maxValue > 0
+                          ? (entry.value / maxValue) * maxBarHeight
+                          : 4.0;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                '${entry.value}',
+                                style: const TextStyle(fontSize: 10),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                height: height,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.sm,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                entry.key,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
               ),
             ),
           ],

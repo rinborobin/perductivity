@@ -27,6 +27,7 @@ class TaskListNotifier extends StateNotifier<AsyncValue<List<TaskEntity>>> {
     required int categoryId,
     required TaskPriority priority,
     DateTime? dueDate,
+    TaskRecurrence recurrence = TaskRecurrence.none,
   }) async {
     try {
       await _repository.createTask(
@@ -37,6 +38,7 @@ class TaskListNotifier extends StateNotifier<AsyncValue<List<TaskEntity>>> {
           priority: priority,
           status: TaskStatus.todo,
           dueDate: dueDate,
+          recurrence: recurrence,
         ),
       );
       await loadTasks();
@@ -53,17 +55,28 @@ class TaskListNotifier extends StateNotifier<AsyncValue<List<TaskEntity>>> {
     required TaskPriority priority,
     required TaskStatus status,
     DateTime? dueDate,
+    required TaskRecurrence recurrence,
   }) async {
     try {
+      final existingTask = await _repository.getTaskById(id);
+      final completedAt = status == TaskStatus.completed
+          ? existingTask?.completedAt ?? DateTime.now()
+          : null;
+
       await _repository.updateTask(
         id,
         TaskEntity(
+          id: id,
           title: title,
           description: description,
           categoryId: categoryId,
           priority: priority,
           status: status,
           dueDate: dueDate,
+          recurrence: recurrence,
+          completedAt: completedAt,
+          isPinned: existingTask?.isPinned ?? false,
+          createdAt: existingTask?.createdAt,
         ),
       );
       await loadTasks();
@@ -119,7 +132,9 @@ class TaskListNotifier extends StateNotifier<AsyncValue<List<TaskEntity>>> {
 }
 
 final taskListProvider =
-    StateNotifierProvider<TaskListNotifier, AsyncValue<List<TaskEntity>>>((ref) {
-  final repository = ref.watch(taskRepositoryProvider);
-  return TaskListNotifier(repository);
-});
+    StateNotifierProvider<TaskListNotifier, AsyncValue<List<TaskEntity>>>((
+      ref,
+    ) {
+      final repository = ref.watch(taskRepositoryProvider);
+      return TaskListNotifier(repository);
+    });

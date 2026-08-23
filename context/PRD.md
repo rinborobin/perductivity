@@ -208,6 +208,10 @@ Filter Tasks
 
 Sort Tasks
 
+Recurring Tasks
+
+Subtasks
+
 ---
 
 ### Categories
@@ -296,8 +300,8 @@ The following features will NOT be implemented during MVP.
 ## Phase 2
 
 - Notifications
-- Recurring Tasks
-- Subtasks
+- Advanced Recurring Rules
+- Nested Subtasks
 - Tags
 - Attachments
 
@@ -359,6 +363,8 @@ The system shall:
 - Filter tasks.
 - Sort tasks.
 - Pin important tasks.
+- Schedule daily, weekly, and monthly recurring tasks.
+- Break tasks into subtasks.
 
 ---
 

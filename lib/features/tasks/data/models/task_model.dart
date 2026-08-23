@@ -11,6 +11,7 @@ class TaskModel {
   final TaskStatus status;
   final DateTime? dueDate;
   final DateTime? completedAt;
+  final TaskRecurrence recurrence;
   final bool isPinned;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -24,6 +25,7 @@ class TaskModel {
     required this.status,
     this.dueDate,
     this.completedAt,
+    this.recurrence = TaskRecurrence.none,
     this.isPinned = false,
     this.createdAt,
     this.updatedAt,
@@ -39,6 +41,7 @@ class TaskModel {
       status: entity.status,
       dueDate: entity.dueDate,
       completedAt: entity.completedAt,
+      recurrence: entity.recurrence,
       isPinned: entity.isPinned,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
@@ -55,6 +58,7 @@ class TaskModel {
       status: data.status,
       dueDate: data.dueDate,
       completedAt: data.completedAt,
+      recurrence: TaskRecurrence.values.byName(data.recurrence),
       isPinned: data.isPinned,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
@@ -71,6 +75,7 @@ class TaskModel {
       status: status,
       dueDate: dueDate,
       completedAt: completedAt,
+      recurrence: recurrence,
       isPinned: isPinned,
       createdAt: createdAt,
       updatedAt: updatedAt,
@@ -85,6 +90,7 @@ class TaskModel {
       priority: priority,
       status: status,
       dueDate: Value(dueDate),
+      recurrence: Value(recurrence.name),
       isPinned: Value(isPinned),
     );
   }

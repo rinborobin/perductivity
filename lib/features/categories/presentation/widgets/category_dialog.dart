@@ -22,18 +22,19 @@ class _CategoryDialogState extends State<CategoryDialog> {
       .toARGB32()
       .toRadixString(16)
       .padLeft(8, '0')
-      .substring(2);
+      .substring(2)
+      .toUpperCase();
   String _selectedIcon = '58281';
 
   final List<String> _colors = [
-    '2563EB',
-    '38BDF8',
-    '22C55E',
-    'F59E0B',
-    'EF4444',
-    '06B6D4',
-    '8B5CF6',
-    'EC4899',
+    '55B58A',
+    '7CC9A3',
+    '8AB9A6',
+    'D59A4C',
+    'D96B6B',
+    '73AEBB',
+    '9B8FC5',
+    'C8789A',
   ];
 
   final List<int> _icons = [
@@ -52,7 +53,9 @@ class _CategoryDialogState extends State<CategoryDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.category?.name ?? '');
     if (widget.category != null) {
-      _selectedColor = widget.category!.color.replaceFirst('#', '');
+      _selectedColor = widget.category!.color
+          .replaceFirst('#', '')
+          .toUpperCase();
       _selectedIcon = widget.category!.icon;
     }
   }
@@ -76,6 +79,7 @@ class _CategoryDialogState extends State<CategoryDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
+                onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(
                   labelText: 'Category Name',
                   hintText: 'Enter category name',

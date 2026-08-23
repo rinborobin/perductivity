@@ -1,5 +1,6 @@
 import '../../../../core/database/database.dart';
 import '../../domain/entities/task_entity.dart';
+import '../entities/subtask_entity.dart';
 
 abstract class TaskRepository {
   Future<List<TaskEntity>> getAllTasks();
@@ -16,6 +17,10 @@ abstract class TaskRepository {
   Future<bool> archiveTask(int id);
   Future<bool> togglePin(int id, bool isPinned);
   Future<bool> deleteTask(int id);
+  Future<List<SubtaskEntity>> getSubtasks(int taskId);
+  Future<int> createSubtask(SubtaskEntity subtask);
+  Future<bool> toggleSubtask(int id, bool isCompleted);
+  Future<bool> deleteSubtask(int id);
   Stream<List<TaskEntity>> watchAllTasks();
   Stream<List<TaskEntity>> watchTasksByStatus(TaskStatus status);
   Future<Map<TaskStatus, int>> getTaskCounts();

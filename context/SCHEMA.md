@@ -89,7 +89,11 @@ Current MVP
 
 - categories
 - tasks
+- subtasks
 - task_history
+
+New installations and schema upgrades create one default `Personal` category
+so users can create their first task without completing a separate setup flow.
 
 Future
 
@@ -158,6 +162,7 @@ Stores all user tasks.
 | status       | TEXT     | Yes      | Enum            |
 | due_date     | DATETIME | No       | Due Date        |
 | completed_at | DATETIME | No       | Completion Time |
+| recurrence   | TEXT     | Yes      | Repeat Rule     |
 | is_pinned    | BOOLEAN  | Yes      | Pin Task        |
 | created_at   | DATETIME | Yes      | Created         |
 | updated_at   | DATETIME | Yes      | Updated         |
@@ -171,6 +176,7 @@ Stores all user tasks.
 - Description <= 5000.
 - Priority must be valid enum.
 - Status must be valid enum.
+- Recurrence must be valid rule.
 - Foreign key required.
 
 ---
@@ -188,6 +194,23 @@ Stores all user tasks.
   "due_date": "2026-08-10T10:00:00"
 }
 ```
+
+---
+
+# Subtasks Table
+
+Stores smaller steps belonging to a task.
+
+## Fields
+
+| Field        | Type     | Required | Description      |
+| ------------ | -------- | -------- | ---------------- |
+| id           | INTEGER  | Yes      | Primary Key      |
+| task_id      | INTEGER  | Yes      | FK Tasks         |
+| title        | TEXT     | Yes      | Step description |
+| is_completed | BOOLEAN  | Yes      | Completion state |
+| created_at   | DATETIME | Yes      | Created          |
+| updated_at   | DATETIME | Yes      | Updated          |
 
 ---
 
@@ -251,6 +274,17 @@ archived
 
 ---
 
+## Recurrence
+
+```text
+none
+daily
+weekly
+monthly
+```
+
+---
+
 # Relationships
 
 ## Categories
@@ -285,6 +319,22 @@ TaskHistory
 
 ---
 
+## Subtasks
+
+```text
+Task
+
+1
+
+↓
+
+∞
+
+Subtask
+```
+
+---
+
 # ER Diagram
 
 ```mermaid
@@ -293,6 +343,8 @@ erDiagram
 CATEGORY ||--o{ TASK : contains
 
 TASK ||--o{ TASK_HISTORY : records
+
+TASK ||--o{ SUBTASK : contains
 
 CATEGORY {
 int id PK

@@ -24,7 +24,17 @@ class Tasks extends Table {
   TextColumn get status => textEnum<TaskStatus>()();
   DateTimeColumn get dueDate => dateTime().nullable()();
   DateTimeColumn get completedAt => dateTime().nullable()();
+  TextColumn get recurrence => text().withDefault(const Constant('none'))();
   BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+class Subtasks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get taskId => integer().references(Tasks, #id)();
+  TextColumn get title => text().withLength(min: 1, max: 150)();
+  BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -40,20 +50,48 @@ enum TaskPriority { low, medium, high }
 
 enum TaskStatus { todo, inProgress, completed, archived }
 
-@DriftDatabase(tables: [Categories, Tasks, TaskHistory])
+enum TaskRecurrence { none, daily, weekly, monthly }
+
+@DriftDatabase(tables: [Categories, Tasks, Subtasks, TaskHistory])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
+        await into(categories).insert(
+          CategoriesCompanion.insert(
+            name: 'Personal',
+            color: '55B58A',
+            icon: '58281',
+          ),
+        );
       },
-      onUpgrade: (Migrator m, int from, int to) async {},
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          final existingCategory = await (select(categories)..limit(1)).get();
+          if (existingCategory.isEmpty) {
+            await into(categories).insert(
+              CategoriesCompanion.insert(
+                name: 'Personal',
+                color: '55B58A',
+                icon: '58281',
+              ),
+            );
+          }
+        }
+        if (from < 3) {
+          await m.addColumn(tasks, tasks.recurrence);
+        }
+        if (from < 4) {
+          await m.createTable(subtasks);
+        }
+      },
     );
   }
 }

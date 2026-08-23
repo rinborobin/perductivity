@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/constants.dart';
 import '../../../../core/database/database.dart';
 import '../../../../shared/widgets/app_action_button.dart';
 import '../../../../shared/widgets/app_bottom_sheet.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../../categories/domain/entities/category_entity.dart';
+import 'subtask_editor.dart';
 
 class TaskDialog extends StatefulWidget {
   final TaskEntity? task;
@@ -15,6 +17,7 @@ class TaskDialog extends StatefulWidget {
     required int categoryId,
     required TaskPriority priority,
     DateTime? dueDate,
+    required TaskRecurrence recurrence,
     TaskStatus? status,
   })
   onSave;
@@ -38,6 +41,7 @@ class _TaskDialogState extends State<TaskDialog> {
   late TaskPriority _selectedPriority;
   TaskStatus? _selectedStatus;
   DateTime? _selectedDueDate;
+  late TaskRecurrence _selectedRecurrence;
 
   @override
   void initState() {
@@ -52,6 +56,7 @@ class _TaskDialogState extends State<TaskDialog> {
     _selectedPriority = widget.task?.priority ?? TaskPriority.medium;
     _selectedStatus = widget.task?.status;
     _selectedDueDate = widget.task?.dueDate;
+    _selectedRecurrence = widget.task?.recurrence ?? TaskRecurrence.none;
   }
 
   @override
@@ -90,12 +95,13 @@ class _TaskDialogState extends State<TaskDialog> {
             children: [
               TextFormField(
                 controller: _titleController,
+                maxLength: 150,
                 decoration: const InputDecoration(
                   labelText: 'Title',
                   hintText: 'Enter task title',
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'Please enter a title';
                   }
                   return null;
@@ -104,6 +110,7 @@ class _TaskDialogState extends State<TaskDialog> {
               const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _descriptionController,
+                maxLength: 5000,
                 decoration: const InputDecoration(
                   labelText: 'Description (optional)',
                   hintText: 'Enter task description',
@@ -180,7 +187,7 @@ class _TaskDialogState extends State<TaskDialog> {
                   items: TaskStatus.values.map((status) {
                     return DropdownMenuItem(
                       value: status,
-                      child: Text(status.name.replaceAll('_', ' ')),
+                      child: Text(_statusLabel(status)),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -204,7 +211,23 @@ class _TaskDialogState extends State<TaskDialog> {
                     lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
                   );
                   if (date != null) {
-                    setState(() => _selectedDueDate = date);
+                    if (!context.mounted) return;
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: _selectedDueDate == null
+                          ? TimeOfDay.now()
+                          : TimeOfDay.fromDateTime(_selectedDueDate!),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _selectedDueDate = DateTime(
+                        date.year,
+                        date.month,
+                        date.day,
+                        time?.hour ?? 0,
+                        time?.minute ?? 0,
+                      );
+                    });
                   }
                 },
                 child: Container(
@@ -221,7 +244,9 @@ class _TaskDialogState extends State<TaskDialog> {
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         _selectedDueDate != null
-                            ? '${_selectedDueDate!.day}/${_selectedDueDate!.month}/${_selectedDueDate!.year}'
+                            ? DateFormat(
+                                'EEE, MMM d, h:mm a',
+                              ).format(_selectedDueDate!)
                             : 'Select date',
                       ),
                       const Spacer(),
@@ -235,6 +260,40 @@ class _TaskDialogState extends State<TaskDialog> {
                   ),
                 ),
               ),
+              const SizedBox(height: AppSpacing.md),
+              const Text('Repeat'),
+              const SizedBox(height: AppSpacing.sm),
+              DropdownButtonFormField<TaskRecurrence>(
+                initialValue: _selectedRecurrence,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                ),
+                items: TaskRecurrence.values.map((recurrence) {
+                  return DropdownMenuItem(
+                    value: recurrence,
+                    child: Text(_recurrenceLabel(recurrence)),
+                  );
+                }).toList(),
+                validator: (value) {
+                  if (value != TaskRecurrence.none &&
+                      _selectedDueDate == null) {
+                    return 'Select a due date for repeating tasks';
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedRecurrence = value);
+                  }
+                },
+              ),
+              if (widget.task != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                SubtaskEditor(taskId: widget.task!.id!),
+              ],
             ],
           ),
         ),
@@ -258,6 +317,7 @@ class _TaskDialogState extends State<TaskDialog> {
                 categoryId: _selectedCategoryId,
                 priority: _selectedPriority,
                 dueDate: _selectedDueDate,
+                recurrence: _selectedRecurrence,
                 status: _selectedStatus,
               );
               Navigator.pop(context);
@@ -276,6 +336,32 @@ class _TaskDialogState extends State<TaskDialog> {
         return AppColors.warning;
       case TaskPriority.low:
         return AppColors.success;
+    }
+  }
+
+  String _statusLabel(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.todo:
+        return 'To do';
+      case TaskStatus.inProgress:
+        return 'In progress';
+      case TaskStatus.completed:
+        return 'Completed';
+      case TaskStatus.archived:
+        return 'Archived';
+    }
+  }
+
+  String _recurrenceLabel(TaskRecurrence recurrence) {
+    switch (recurrence) {
+      case TaskRecurrence.none:
+        return 'Does not repeat';
+      case TaskRecurrence.daily:
+        return 'Every day';
+      case TaskRecurrence.weekly:
+        return 'Every week';
+      case TaskRecurrence.monthly:
+        return 'Every month';
     }
   }
 }

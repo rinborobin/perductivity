@@ -9,10 +9,16 @@ class AppTheme {
       secondary: AppColors.secondary,
       error: AppColors.error,
       surface: AppColors.lightSurface,
+      surfaceContainerHighest: AppColors.lightSurfaceVariant,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onError: Colors.white,
       onSurface: AppColors.lightTextPrimary,
+      onSurfaceVariant: AppColors.lightTextSecondary,
+      outline: AppColors.lightBorder,
+      outlineVariant: AppColors.lightBorder,
+      primaryContainer: Color(0xFFD8F0E2),
+      onPrimaryContainer: Color(0xFF173B2A),
     );
 
     return ThemeData(
@@ -128,10 +134,16 @@ class AppTheme {
       secondary: AppColors.secondary,
       error: AppColors.error,
       surface: AppColors.darkSurface,
+      surfaceContainerHighest: AppColors.darkSurfaceVariant,
       onPrimary: Colors.white,
       onSecondary: Colors.white,
       onError: Colors.white,
       onSurface: AppColors.darkTextPrimary,
+      onSurfaceVariant: AppColors.darkTextSecondary,
+      outline: AppColors.darkBorder,
+      outlineVariant: AppColors.darkBorder,
+      primaryContainer: Color(0xFF2C5A46),
+      onPrimaryContainer: Color(0xFFD9F3E4),
     );
 
     return ThemeData(

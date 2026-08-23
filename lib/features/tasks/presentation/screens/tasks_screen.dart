@@ -303,6 +303,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               required categoryId,
               required priority,
               dueDate,
+              required recurrence,
               status,
             }) {
               ref
@@ -313,6 +314,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     categoryId: categoryId,
                     priority: priority,
                     dueDate: dueDate,
+                    recurrence: recurrence,
                   );
             },
       ),
@@ -341,6 +343,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
               required categoryId,
               required priority,
               dueDate,
+              required recurrence,
               status,
             }) {
               ref
@@ -353,6 +356,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     priority: priority,
                     status: status ?? task.status,
                     dueDate: dueDate,
+                    recurrence: recurrence,
                   );
             },
       ),

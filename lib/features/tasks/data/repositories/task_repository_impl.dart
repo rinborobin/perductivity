@@ -1,5 +1,6 @@
 import '../../../../core/database/database.dart';
 import '../../domain/entities/task_entity.dart';
+import '../../domain/entities/subtask_entity.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../datasource/task_datasource.dart';
 import '../models/task_model.dart';
@@ -89,17 +90,38 @@ class TaskRepositoryImpl implements TaskRepository {
   }
 
   @override
+  Future<List<SubtaskEntity>> getSubtasks(int taskId) async {
+    final models = await _dataSource.getSubtasks(taskId);
+    return models.map((model) => model.toEntity()).toList();
+  }
+
+  @override
+  Future<int> createSubtask(SubtaskEntity subtask) async {
+    return await _dataSource.createSubtask(subtask);
+  }
+
+  @override
+  Future<bool> toggleSubtask(int id, bool isCompleted) async {
+    return await _dataSource.toggleSubtask(id, isCompleted);
+  }
+
+  @override
+  Future<bool> deleteSubtask(int id) async {
+    return await _dataSource.deleteSubtask(id);
+  }
+
+  @override
   Stream<List<TaskEntity>> watchAllTasks() {
     return _dataSource.watchAllTasks().map(
-          (models) => models.map((m) => m.toEntity()).toList(),
-        );
+      (models) => models.map((m) => m.toEntity()).toList(),
+    );
   }
 
   @override
   Stream<List<TaskEntity>> watchTasksByStatus(TaskStatus status) {
-    return _dataSource.watchTasksByStatus(status).map(
-          (models) => models.map((m) => m.toEntity()).toList(),
-        );
+    return _dataSource
+        .watchTasksByStatus(status)
+        .map((models) => models.map((m) => m.toEntity()).toList());
   }
 
   @override

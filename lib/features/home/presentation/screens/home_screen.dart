@@ -22,6 +22,9 @@ class HomeScreen extends ConsumerWidget {
     final categoriesState = ref.watch(categoryListProvider);
 
     return Scaffold(
+      floatingActionButton: _HomeAddButton(
+        onPressed: () => _showCreateTask(context, ref, categoriesState),
+      ),
       body: SafeArea(
         child: tasksState.when(
           data: (tasks) {
@@ -50,9 +53,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 children: [
                   _buildHeader(context, now),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildPrimaryAction(context, ref, categoriesState),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.xl),
                   _buildOverview(
                     pendingCount: pendingCount,
                     completedToday: completedToday.length,
@@ -149,73 +150,39 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(BuildContext context, DateTime now) {
-    final hour = now.hour;
-    final greeting = hour < 12
-        ? 'Good morning'
-        : hour < 17
-        ? 'Good afternoon'
-        : 'Good evening';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          greeting,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          DateFormat('EEEE, MMMM d').format(now),
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Today,',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                DateFormat('d MMMM yyyy').format(now),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildPrimaryAction(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue<List<CategoryEntity>> categoriesState,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return AppSurface(
-      color: colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Plan your next step',
-              style: TextStyle(
-                color: colorScheme.onPrimaryContainer,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Keep your day moving with one clear task.',
-              style: TextStyle(
-                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.75),
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppActionButton(
-              primary: true,
-              onPressed: () => _showCreateTask(context, ref, categoriesState),
-              icon: Icons.add,
-              label: 'Add task',
-            ),
-          ],
+        _HomeHeaderButton(
+          icon: Icons.search,
+          tooltip: 'Search tasks',
+          onPressed: () => context.go('/tasks'),
         ),
-      ),
+        _HomeHeaderButton(
+          icon: Icons.settings_outlined,
+          tooltip: 'Settings',
+          onPressed: () => context.go('/settings'),
+        ),
+      ],
     );
   }
 
@@ -464,6 +431,7 @@ class HomeScreen extends ConsumerWidget {
               required categoryId,
               required priority,
               dueDate,
+              required recurrence,
               status,
             }) {
               ref
@@ -474,6 +442,7 @@ class HomeScreen extends ConsumerWidget {
                     categoryId: categoryId,
                     priority: priority,
                     dueDate: dueDate,
+                    recurrence: recurrence,
                   );
             },
       ),
@@ -501,6 +470,7 @@ class HomeScreen extends ConsumerWidget {
               required categoryId,
               required priority,
               dueDate,
+              required recurrence,
               status,
             }) {
               ref
@@ -513,6 +483,7 @@ class HomeScreen extends ConsumerWidget {
                     priority: priority,
                     status: status ?? task.status,
                     dueDate: dueDate,
+                    recurrence: recurrence,
                   );
             },
       ),
@@ -586,11 +557,15 @@ class _OverviewMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
           ),
           const SizedBox(width: AppSpacing.xs),
           Expanded(
@@ -613,6 +588,86 @@ class _OverviewMetric extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HomeHeaderButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _HomeHeaderButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Padding(
+        padding: const EdgeInsets.only(left: AppSpacing.xs),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Ink(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Icon(icon, color: colorScheme.onSurfaceVariant),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeAddButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _HomeAddButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      button: true,
+      label: 'Add task',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          child: Ink(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.primary.withValues(alpha: 0.25),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Icon(Icons.add, color: colorScheme.onPrimary, size: 30),
+          ),
+        ),
       ),
     );
   }

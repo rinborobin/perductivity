@@ -35,6 +35,7 @@ class TaskCard extends StatelessWidget {
 
     return AppSurface(
       padding: EdgeInsets.zero,
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -121,7 +122,7 @@ class TaskCard extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: _parseColor(
-                                categoryColor ?? '2563EB',
+                                categoryColor ?? '55B58A',
                               ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(
                                 AppRadius.pill,
@@ -131,7 +132,7 @@ class TaskCard extends StatelessWidget {
                               categoryName!,
                               style: TextStyle(
                                 fontSize: 10,
-                                color: _parseColor(categoryColor ?? '2563EB'),
+                                color: _parseColor(categoryColor ?? '55B58A'),
                               ),
                             ),
                           ),
@@ -173,6 +174,14 @@ class TaskCard extends StatelessWidget {
                                   ? AppColors.error
                                   : colorScheme.onSurfaceVariant,
                             ),
+                          ),
+                        ],
+                        if (task.recurrence != TaskRecurrence.none) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          Icon(
+                            Icons.repeat,
+                            size: 12,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ],
                       ],

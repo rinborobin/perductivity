@@ -61,7 +61,12 @@ class AppBottomSheet extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               Flexible(child: content),
               const SizedBox(height: AppSpacing.md),
-              Row(mainAxisAlignment: MainAxisAlignment.end, children: actions),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: actions,
+              ),
             ],
           ),
         ),

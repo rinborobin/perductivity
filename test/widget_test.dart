@@ -8,6 +8,7 @@ import 'package:perductivity/features/categories/domain/entities/category_entity
 import 'package:perductivity/features/categories/domain/repositories/category_repository.dart';
 import 'package:perductivity/features/categories/presentation/providers/category_list_provider.dart';
 import 'package:perductivity/features/tasks/domain/entities/task_entity.dart';
+import 'package:perductivity/features/tasks/domain/entities/subtask_entity.dart';
 import 'package:perductivity/features/tasks/domain/repositories/task_repository.dart';
 import 'package:perductivity/features/tasks/presentation/providers/task_list_provider.dart';
 
@@ -24,8 +25,8 @@ void main() {
     await tester.pumpWidget(_buildTestApp());
     await tester.pump();
 
-    expect(find.text('Plan your next step'), findsOneWidget);
-    expect(find.text('Add task'), findsOneWidget);
+    expect(find.text('Today,'), findsOneWidget);
+    expect(find.bySemanticsLabel('Add task'), findsOneWidget);
   });
 }
 
@@ -85,6 +86,18 @@ class _FakeTaskRepository implements TaskRepository {
 
   @override
   Future<bool> deleteTask(int id) async => true;
+
+  @override
+  Future<List<SubtaskEntity>> getSubtasks(int taskId) async => [];
+
+  @override
+  Future<int> createSubtask(SubtaskEntity subtask) async => 1;
+
+  @override
+  Future<bool> toggleSubtask(int id, bool isCompleted) async => true;
+
+  @override
+  Future<bool> deleteSubtask(int id) async => true;
 
   @override
   Stream<List<TaskEntity>> watchAllTasks() => Stream.value([]);

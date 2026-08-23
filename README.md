@@ -6,6 +6,8 @@ categories, schedules, and progress in one workspace.
 ## Current Features
 
 - Task creation, editing, completion, archiving, pinning, and deletion
+- Recurring tasks with automatic next-occurrence scheduling
+- Subtasks for breaking larger tasks into manageable steps
 - Task filtering by status, due date, and pinned state
 - Category management with colors and icons
 - Home dashboard with today's tasks and upcoming deadlines
