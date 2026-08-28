@@ -78,6 +78,29 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
+          _buildSection(context, 'Integrations'),
+          AppSurface(
+            padding: EdgeInsets.zero,
+            child: _SettingsRow(
+              icon: Icons.school_outlined,
+              title: 'Moodle',
+              subtitle: 'Preview courses and assignments',
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.push('/settings/moodle'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppSurface(
+            padding: EdgeInsets.zero,
+            child: _SettingsRow(
+              icon: Icons.auto_awesome_outlined,
+              title: 'AI Planner',
+              subtitle: 'Generate a daily plan from your schedule',
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.push('/planner'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
           _buildSection(context, 'About'),
           AppSurface(
             padding: EdgeInsets.zero,
