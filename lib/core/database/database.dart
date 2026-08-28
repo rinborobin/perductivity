@@ -17,6 +17,7 @@ class Categories extends Table {
 
 class Tasks extends Table {
   IntColumn get id => integer().autoIncrement()();
+  TextColumn get externalId => text().nullable()();
   TextColumn get title => text().withLength(min: 1, max: 150)();
   TextColumn get description => text().withLength(max: 5000).nullable()();
   IntColumn get categoryId => integer().references(Categories, #id)();
@@ -57,7 +58,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -90,6 +91,9 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4) {
           await m.createTable(subtasks);
+        }
+        if (from < 5) {
+          await m.addColumn(tasks, tasks.externalId);
         }
       },
     );

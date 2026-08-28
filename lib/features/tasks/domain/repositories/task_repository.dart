@@ -10,6 +10,7 @@ abstract class TaskRepository {
   Future<List<TaskEntity>> getUpcomingTasks({int limit = 10});
   Future<List<TaskEntity>> searchTasks(String query);
   Future<TaskEntity?> getTaskById(int id);
+  Future<TaskEntity?> getTaskByExternalId(String externalId);
   Future<int> createTask(TaskEntity task);
   Future<bool> updateTask(int id, TaskEntity task);
   Future<bool> completeTask(int id);
@@ -18,6 +19,7 @@ abstract class TaskRepository {
   Future<bool> togglePin(int id, bool isPinned);
   Future<bool> deleteTask(int id);
   Future<List<SubtaskEntity>> getSubtasks(int taskId);
+  Future<Map<int, List<int>>> getSubtaskProgress();
   Future<int> createSubtask(SubtaskEntity subtask);
   Future<bool> toggleSubtask(int id, bool isCompleted);
   Future<bool> deleteSubtask(int id);

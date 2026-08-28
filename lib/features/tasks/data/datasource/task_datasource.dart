@@ -79,6 +79,26 @@ class TaskDataSource {
     return await _db.into(_db.tasks).insert(task.toCompanion());
   }
 
+  Future<TaskModel?> getTaskByExternalId(String externalId) async {
+    final result = await (_db.select(
+      _db.tasks,
+    )..where((t) => t.externalId.equals(externalId))).getSingleOrNull();
+    return result != null ? TaskModel.fromDrift(result) : null;
+  }
+
+  Future<Map<int, List<int>>> getSubtaskProgress() async {
+    final rows = await _db.select(_db.subtasks).get();
+    final map = <int, List<int>>{};
+    for (final row in rows) {
+      final current = map[row.taskId] ?? [0, 0];
+      map[row.taskId] = [
+        current[0] + 1,
+        current[1] + (row.isCompleted ? 1 : 0),
+      ];
+    }
+    return map;
+  }
+
   Future<bool> updateTask(int id, TaskModel task) async {
     final rowsAffected =
         await (_db.update(_db.tasks)..where((t) => t.id.equals(id))).write(

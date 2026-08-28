@@ -4,6 +4,7 @@ import '../../domain/entities/task_entity.dart';
 
 class TaskModel {
   final int? id;
+  final String? externalId;
   final String title;
   final String? description;
   final int categoryId;
@@ -18,6 +19,7 @@ class TaskModel {
 
   const TaskModel({
     this.id,
+    this.externalId,
     required this.title,
     this.description,
     required this.categoryId,
@@ -34,6 +36,7 @@ class TaskModel {
   factory TaskModel.fromEntity(TaskEntity entity) {
     return TaskModel(
       id: entity.id,
+      externalId: entity.externalId,
       title: entity.title,
       description: entity.description,
       categoryId: entity.categoryId,
@@ -51,6 +54,7 @@ class TaskModel {
   factory TaskModel.fromDrift(Task data) {
     return TaskModel(
       id: data.id,
+      externalId: data.externalId,
       title: data.title,
       description: data.description,
       categoryId: data.categoryId,
@@ -68,6 +72,7 @@ class TaskModel {
   TaskEntity toEntity() {
     return TaskEntity(
       id: id,
+      externalId: externalId,
       title: title,
       description: description,
       categoryId: categoryId,
@@ -85,6 +90,7 @@ class TaskModel {
   TasksCompanion toCompanion() {
     return TasksCompanion.insert(
       title: title,
+      externalId: Value(externalId),
       description: Value(description),
       categoryId: categoryId,
       priority: priority,

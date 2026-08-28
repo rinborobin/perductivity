@@ -3,6 +3,7 @@ import '../../../../core/database/database.dart';
 
 class TaskEntity extends Equatable {
   final int? id;
+  final String? externalId;
   final String title;
   final String? description;
   final int categoryId;
@@ -17,6 +18,7 @@ class TaskEntity extends Equatable {
 
   const TaskEntity({
     this.id,
+    this.externalId,
     required this.title,
     this.description,
     required this.categoryId,
@@ -32,6 +34,7 @@ class TaskEntity extends Equatable {
 
   TaskEntity copyWith({
     int? id,
+    String? externalId,
     String? title,
     String? description,
     int? categoryId,
@@ -46,6 +49,7 @@ class TaskEntity extends Equatable {
   }) {
     return TaskEntity(
       id: id ?? this.id,
+      externalId: externalId ?? this.externalId,
       title: title ?? this.title,
       description: description ?? this.description,
       categoryId: categoryId ?? this.categoryId,
@@ -63,6 +67,7 @@ class TaskEntity extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    externalId,
     title,
     description,
     categoryId,

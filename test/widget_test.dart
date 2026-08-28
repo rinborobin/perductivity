@@ -67,6 +67,9 @@ class _FakeTaskRepository implements TaskRepository {
   Future<TaskEntity?> getTaskById(int id) async => null;
 
   @override
+  Future<TaskEntity?> getTaskByExternalId(String externalId) async => null;
+
+  @override
   Future<int> createTask(TaskEntity task) async => 1;
 
   @override
@@ -89,6 +92,9 @@ class _FakeTaskRepository implements TaskRepository {
 
   @override
   Future<List<SubtaskEntity>> getSubtasks(int taskId) async => [];
+
+  @override
+  Future<Map<int, List<int>>> getSubtaskProgress() async => {};
 
   @override
   Future<int> createSubtask(SubtaskEntity subtask) async => 1;
