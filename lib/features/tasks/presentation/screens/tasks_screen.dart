@@ -9,8 +9,10 @@ import '../../../categories/domain/entities/category_entity.dart';
 import '../../../categories/presentation/providers/category_list_provider.dart';
 import '../providers/task_list_provider.dart';
 import '../providers/task_filter_provider.dart';
+import '../providers/subtask_providers.dart';
 import '../widgets/task_card.dart';
 import '../widgets/task_dialog.dart';
+import 'task_detail_screen.dart';
 
 class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({super.key});
@@ -39,6 +41,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
   Widget build(BuildContext context) {
     final tasksState = ref.watch(taskListProvider);
     final categoriesState = ref.watch(categoryListProvider);
+    final subtaskProgressState = ref.watch(subtaskProgressProvider);
     final activeFilter = ref.watch(taskFilterProvider);
 
     return Scaffold(
@@ -57,6 +60,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
             return _buildEmptyState(context, ref, categoriesState);
           }
 
+          final subtaskProgress = subtaskProgressState.valueOrNull ?? {};
           final searchedTasks = _filterBySearch(tasks);
           final filteredTasks = applyTaskFilter(
             searchedTasks,
@@ -95,8 +99,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   ...pinnedTasks.map(
-                    (task) =>
-                        _buildTaskCard(context, ref, task, categoriesState),
+                    (task) => _buildTaskCard(
+                      context,
+                      ref,
+                      task,
+                      categoriesState,
+                      subtaskProgress,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
@@ -112,8 +121,13 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                   if (pinnedTasks.isNotEmpty)
                     const SizedBox(height: AppSpacing.sm),
                   ...unpinnedTasks.map(
-                    (task) =>
-                        _buildTaskCard(context, ref, task, categoriesState),
+                    (task) => _buildTaskCard(
+                      context,
+                      ref,
+                      task,
+                      categoriesState,
+                      subtaskProgress,
+                    ),
                   ),
                 ],
               ],
@@ -142,17 +156,27 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     WidgetRef ref,
     TaskEntity task,
     AsyncValue<List<CategoryEntity>> categoriesState,
+    Map<int, List<int>> subtaskProgress,
   ) {
     final categories = categoriesState.valueOrNull ?? [];
     final category = categories
         .where((c) => c.id == task.categoryId)
         .firstOrNull;
+    final progress = subtaskProgress[task.id] ?? [0, 0];
+
+    void openDetail() {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => TaskDetailScreen(taskId: task.id!),
+        ),
+      );
+    }
 
     return TaskCard(
       task: task,
       categoryName: category?.name,
       categoryColor: category?.color,
-      onTap: () => _showEditDialog(context, ref, task, categoriesState),
+      onTap: openDetail,
       onToggleComplete: () {
         if (task.status == TaskStatus.completed) {
           ref.read(taskListProvider.notifier).uncompleteTask(task.id!);
@@ -164,6 +188,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
         ref.read(taskListProvider.notifier).togglePin(task.id!, !task.isPinned);
       },
       onDelete: () => _confirmDelete(context, ref, task.id!),
+      subtaskTotal: progress[0],
+      subtaskDone: progress[1],
+      onViewSubtasks: openDetail,
     );
   }
 
@@ -313,48 +340,6 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     description: description,
                     categoryId: categoryId,
                     priority: priority,
-                    dueDate: dueDate,
-                    recurrence: recurrence,
-                  );
-            },
-      ),
-    );
-  }
-
-  void _showEditDialog(
-    BuildContext context,
-    WidgetRef ref,
-    TaskEntity task,
-    AsyncValue<List<CategoryEntity>> categoriesState,
-  ) {
-    final categories = categoriesState.valueOrNull ?? [];
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => TaskDialog(
-        task: task,
-        categories: categories,
-        onSave:
-            ({
-              required title,
-              description,
-              required categoryId,
-              required priority,
-              dueDate,
-              required recurrence,
-              status,
-            }) {
-              ref
-                  .read(taskListProvider.notifier)
-                  .updateTask(
-                    id: task.id!,
-                    title: title,
-                    description: description,
-                    categoryId: categoryId,
-                    priority: priority,
-                    status: status ?? task.status,
                     dueDate: dueDate,
                     recurrence: recurrence,
                   );

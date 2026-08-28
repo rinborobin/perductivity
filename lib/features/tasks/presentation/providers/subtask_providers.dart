@@ -8,3 +8,7 @@ final subtaskListProvider = FutureProvider.family<List<SubtaskEntity>, int>((
 ) async {
   return ref.watch(taskRepositoryProvider).getSubtasks(taskId);
 });
+
+final subtaskProgressProvider = FutureProvider<Map<int, List<int>>>((ref) async {
+  return ref.watch(taskRepositoryProvider).getSubtaskProgress();
+});

@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/constants.dart';
+import '../../../../core/database/database.dart';
 import '../../../../shared/widgets/app_action_button.dart';
 import '../../../../shared/widgets/app_surface.dart';
 import '../../domain/entities/subtask_entity.dart';
 import '../providers/subtask_providers.dart';
 import '../providers/task_providers.dart';
+import '../providers/task_list_provider.dart';
 
 class SubtaskEditor extends ConsumerStatefulWidget {
   final int taskId;
+  final bool showTitle;
 
-  const SubtaskEditor({required this.taskId, super.key});
+  const SubtaskEditor({
+    required this.taskId,
+    this.showTitle = true,
+    super.key,
+  });
 
   @override
   ConsumerState<SubtaskEditor> createState() => _SubtaskEditorState();
@@ -38,8 +45,10 @@ class _SubtaskEditorState extends ConsumerState<SubtaskEditor> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Subtasks', style: TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: AppSpacing.sm),
+        if (widget.showTitle) ...[
+          const Text('Subtasks', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: AppSpacing.sm),
+        ],
         subtasksState.when(
           data: (subtasks) => Column(
             children: [
@@ -131,19 +140,32 @@ class _SubtaskEditorState extends ConsumerState<SubtaskEditor> {
     if (!mounted) return;
     _controller.clear();
     ref.invalidate(subtaskListProvider(widget.taskId));
+    ref.invalidate(subtaskProgressProvider);
   }
 
   Future<void> _toggleSubtask(SubtaskEntity subtask) async {
-    await ref
-        .read(taskRepositoryProvider)
-        .toggleSubtask(subtask.id!, !subtask.isCompleted);
+    final repo = ref.read(taskRepositoryProvider);
+    await repo.toggleSubtask(subtask.id!, !subtask.isCompleted);
+    final subtasks = await repo.getSubtasks(widget.taskId);
+    final task = await repo.getTaskById(widget.taskId);
+    if (subtasks.isNotEmpty) {
+      final allDone = subtasks.every((s) => s.isCompleted);
+      if (allDone && task?.status != TaskStatus.completed) {
+        await repo.completeTask(widget.taskId);
+      } else if (!allDone && task?.status == TaskStatus.completed) {
+        await repo.uncompleteTask(widget.taskId);
+      }
+    }
     if (!mounted) return;
     ref.invalidate(subtaskListProvider(widget.taskId));
+    ref.invalidate(subtaskProgressProvider);
+    ref.read(taskListProvider.notifier).loadTasks();
   }
 
   Future<void> _deleteSubtask(SubtaskEntity subtask) async {
     await ref.read(taskRepositoryProvider).deleteSubtask(subtask.id!);
     if (!mounted) return;
     ref.invalidate(subtaskListProvider(widget.taskId));
+    ref.invalidate(subtaskProgressProvider);
   }
 }

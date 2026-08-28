@@ -15,6 +15,9 @@ class TaskCard extends StatelessWidget {
   final VoidCallback? onToggleComplete;
   final VoidCallback? onTogglePin;
   final VoidCallback? onDelete;
+  final VoidCallback? onViewSubtasks;
+  final int subtaskTotal;
+  final int subtaskDone;
 
   const TaskCard({
     required this.task,
@@ -24,6 +27,9 @@ class TaskCard extends StatelessWidget {
     this.onToggleComplete,
     this.onTogglePin,
     this.onDelete,
+    this.onViewSubtasks,
+    this.subtaskTotal = 0,
+    this.subtaskDone = 0,
     super.key,
   });
 
@@ -182,6 +188,46 @@ class TaskCard extends StatelessWidget {
                             Icons.repeat,
                             size: 12,
                             color: colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                        if (subtaskTotal > 0) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          InkWell(
+                            onTap: onViewSubtasks,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.pill,
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.pill,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.checklist,
+                                    size: 12,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  Text(
+                                    '$subtaskDone/$subtaskTotal',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ],
