@@ -8,15 +8,8 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   final container = ProviderContainer(
-    overrides: [
-      databaseProvider.overrideWithValue(AppDatabase()),
-    ],
+    overrides: [databaseProvider.overrideWithValue(AppDatabase())],
   );
 
-  runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const App(),
-    ),
-  );
+  runApp(UncontrolledProviderScope(container: container, child: const App()));
 }

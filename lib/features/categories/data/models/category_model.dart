@@ -52,10 +52,6 @@ class CategoryModel {
   }
 
   CategoriesCompanion toCompanion() {
-    return CategoriesCompanion.insert(
-      name: name,
-      color: color,
-      icon: icon,
-    );
+    return CategoriesCompanion.insert(name: name, color: color, icon: icon);
   }
 }
