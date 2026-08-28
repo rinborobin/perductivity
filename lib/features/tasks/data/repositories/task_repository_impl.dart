@@ -53,6 +53,12 @@ class TaskRepositoryImpl implements TaskRepository {
   }
 
   @override
+  Future<TaskEntity?> getTaskByExternalId(String externalId) async {
+    final model = await _dataSource.getTaskByExternalId(externalId);
+    return model?.toEntity();
+  }
+
+  @override
   Future<int> createTask(TaskEntity task) async {
     final model = TaskModel.fromEntity(task);
     return await _dataSource.createTask(model);
@@ -93,6 +99,11 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<List<SubtaskEntity>> getSubtasks(int taskId) async {
     final models = await _dataSource.getSubtasks(taskId);
     return models.map((model) => model.toEntity()).toList();
+  }
+
+  @override
+  Future<Map<int, List<int>>> getSubtaskProgress() async {
+    return await _dataSource.getSubtaskProgress();
   }
 
   @override

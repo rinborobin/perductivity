@@ -415,6 +415,17 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _externalIdMeta = const VerificationMeta(
+    'externalId',
+  );
+  @override
+  late final GeneratedColumn<String> externalId = GeneratedColumn<String>(
+    'external_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -548,6 +559,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    externalId,
     title,
     description,
     categoryId,
@@ -574,6 +586,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('external_id')) {
+      context.handle(
+        _externalIdMeta,
+        externalId.isAcceptableOrUnknown(data['external_id']!, _externalIdMeta),
+      );
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -652,6 +670,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      externalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}external_id'],
+      ),
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}title'],
@@ -716,6 +738,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
 
 class Task extends DataClass implements Insertable<Task> {
   final int id;
+  final String? externalId;
   final String title;
   final String? description;
   final int categoryId;
@@ -729,6 +752,7 @@ class Task extends DataClass implements Insertable<Task> {
   final DateTime updatedAt;
   const Task({
     required this.id,
+    this.externalId,
     required this.title,
     this.description,
     required this.categoryId,
@@ -745,6 +769,9 @@ class Task extends DataClass implements Insertable<Task> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    if (!nullToAbsent || externalId != null) {
+      map['external_id'] = Variable<String>(externalId);
+    }
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
@@ -776,6 +803,9 @@ class Task extends DataClass implements Insertable<Task> {
   TasksCompanion toCompanion(bool nullToAbsent) {
     return TasksCompanion(
       id: Value(id),
+      externalId: externalId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(externalId),
       title: Value(title),
       description: description == null && nullToAbsent
           ? const Value.absent()
@@ -803,6 +833,7 @@ class Task extends DataClass implements Insertable<Task> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Task(
       id: serializer.fromJson<int>(json['id']),
+      externalId: serializer.fromJson<String?>(json['externalId']),
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
       categoryId: serializer.fromJson<int>(json['categoryId']),
@@ -825,6 +856,7 @@ class Task extends DataClass implements Insertable<Task> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'externalId': serializer.toJson<String?>(externalId),
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
       'categoryId': serializer.toJson<int>(categoryId),
@@ -845,6 +877,7 @@ class Task extends DataClass implements Insertable<Task> {
 
   Task copyWith({
     int? id,
+    Value<String?> externalId = const Value.absent(),
     String? title,
     Value<String?> description = const Value.absent(),
     int? categoryId,
@@ -858,6 +891,7 @@ class Task extends DataClass implements Insertable<Task> {
     DateTime? updatedAt,
   }) => Task(
     id: id ?? this.id,
+    externalId: externalId.present ? externalId.value : this.externalId,
     title: title ?? this.title,
     description: description.present ? description.value : this.description,
     categoryId: categoryId ?? this.categoryId,
@@ -873,6 +907,9 @@ class Task extends DataClass implements Insertable<Task> {
   Task copyWithCompanion(TasksCompanion data) {
     return Task(
       id: data.id.present ? data.id.value : this.id,
+      externalId: data.externalId.present
+          ? data.externalId.value
+          : this.externalId,
       title: data.title.present ? data.title.value : this.title,
       description: data.description.present
           ? data.description.value
@@ -899,6 +936,7 @@ class Task extends DataClass implements Insertable<Task> {
   String toString() {
     return (StringBuffer('Task(')
           ..write('id: $id, ')
+          ..write('externalId: $externalId, ')
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('categoryId: $categoryId, ')
@@ -917,6 +955,7 @@ class Task extends DataClass implements Insertable<Task> {
   @override
   int get hashCode => Object.hash(
     id,
+    externalId,
     title,
     description,
     categoryId,
@@ -934,6 +973,7 @@ class Task extends DataClass implements Insertable<Task> {
       identical(this, other) ||
       (other is Task &&
           other.id == this.id &&
+          other.externalId == this.externalId &&
           other.title == this.title &&
           other.description == this.description &&
           other.categoryId == this.categoryId &&
@@ -949,6 +989,7 @@ class Task extends DataClass implements Insertable<Task> {
 
 class TasksCompanion extends UpdateCompanion<Task> {
   final Value<int> id;
+  final Value<String?> externalId;
   final Value<String> title;
   final Value<String?> description;
   final Value<int> categoryId;
@@ -962,6 +1003,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<DateTime> updatedAt;
   const TasksCompanion({
     this.id = const Value.absent(),
+    this.externalId = const Value.absent(),
     this.title = const Value.absent(),
     this.description = const Value.absent(),
     this.categoryId = const Value.absent(),
@@ -976,6 +1018,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   });
   TasksCompanion.insert({
     this.id = const Value.absent(),
+    this.externalId = const Value.absent(),
     required String title,
     this.description = const Value.absent(),
     required int categoryId,
@@ -993,6 +1036,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
        status = Value(status);
   static Insertable<Task> custom({
     Expression<int>? id,
+    Expression<String>? externalId,
     Expression<String>? title,
     Expression<String>? description,
     Expression<int>? categoryId,
@@ -1007,6 +1051,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (externalId != null) 'external_id': externalId,
       if (title != null) 'title': title,
       if (description != null) 'description': description,
       if (categoryId != null) 'category_id': categoryId,
@@ -1023,6 +1068,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
 
   TasksCompanion copyWith({
     Value<int>? id,
+    Value<String?>? externalId,
     Value<String>? title,
     Value<String?>? description,
     Value<int>? categoryId,
@@ -1037,6 +1083,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }) {
     return TasksCompanion(
       id: id ?? this.id,
+      externalId: externalId ?? this.externalId,
       title: title ?? this.title,
       description: description ?? this.description,
       categoryId: categoryId ?? this.categoryId,
@@ -1056,6 +1103,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (externalId.present) {
+      map['external_id'] = Variable<String>(externalId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -1101,6 +1151,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   String toString() {
     return (StringBuffer('TasksCompanion(')
           ..write('id: $id, ')
+          ..write('externalId: $externalId, ')
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('categoryId: $categoryId, ')
@@ -2147,6 +2198,7 @@ typedef $$CategoriesTableProcessedTableManager =
 typedef $$TasksTableCreateCompanionBuilder =
     TasksCompanion Function({
       Value<int> id,
+      Value<String?> externalId,
       required String title,
       Value<String?> description,
       required int categoryId,
@@ -2162,6 +2214,7 @@ typedef $$TasksTableCreateCompanionBuilder =
 typedef $$TasksTableUpdateCompanionBuilder =
     TasksCompanion Function({
       Value<int> id,
+      Value<String?> externalId,
       Value<String> title,
       Value<String?> description,
       Value<int> categoryId,
@@ -2244,6 +2297,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get externalId => $composableBuilder(
+    column: $table.externalId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2387,6 +2445,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
     builder: (column) => ColumnOrderings(column),
@@ -2472,6 +2535,11 @@ class $$TasksTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -2616,6 +2684,7 @@ class $$TasksTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String?> externalId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<int> categoryId = const Value.absent(),
@@ -2629,6 +2698,7 @@ class $$TasksTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => TasksCompanion(
                 id: id,
+                externalId: externalId,
                 title: title,
                 description: description,
                 categoryId: categoryId,
@@ -2644,6 +2714,7 @@ class $$TasksTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String?> externalId = const Value.absent(),
                 required String title,
                 Value<String?> description = const Value.absent(),
                 required int categoryId,
@@ -2657,6 +2728,7 @@ class $$TasksTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => TasksCompanion.insert(
                 id: id,
+                externalId: externalId,
                 title: title,
                 description: description,
                 categoryId: categoryId,

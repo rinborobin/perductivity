@@ -40,7 +40,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
   @override
   Stream<List<CategoryEntity>> watchAllCategories() {
     return _dataSource.watchAllCategories().map(
-          (models) => models.map((m) => m.toEntity()).toList(),
-        );
+      (models) => models.map((m) => m.toEntity()).toList(),
+    );
   }
 }

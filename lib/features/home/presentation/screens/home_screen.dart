@@ -8,8 +8,10 @@ import '../../../categories/domain/entities/category_entity.dart';
 import '../../../categories/presentation/providers/category_list_provider.dart';
 import '../../../tasks/domain/entities/task_entity.dart';
 import '../../../tasks/presentation/providers/task_list_provider.dart';
+import '../../../tasks/presentation/providers/subtask_providers.dart';
 import '../../../tasks/presentation/widgets/task_card.dart';
 import '../../../tasks/presentation/widgets/task_dialog.dart';
+import '../../../tasks/presentation/screens/task_detail_screen.dart';
 import '../../../../shared/widgets/app_action_button.dart';
 import '../../../../shared/widgets/app_surface.dart';
 
@@ -20,6 +22,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tasksState = ref.watch(taskListProvider);
     final categoriesState = ref.watch(categoryListProvider);
+    final subtaskProgressState = ref.watch(subtaskProgressProvider);
 
     return Scaffold(
       floatingActionButton: _HomeAddButton(
@@ -29,6 +32,7 @@ class HomeScreen extends ConsumerWidget {
         child: tasksState.when(
           data: (tasks) {
             final categories = categoriesState.valueOrNull ?? [];
+            final subtaskProgress = subtaskProgressState.valueOrNull ?? {};
             final now = DateTime.now();
             final todayTasks = _getTodayTasks(tasks, now);
             final upcomingTasks = _getUpcomingTasks(tasks, now);
@@ -85,12 +89,17 @@ class HomeScreen extends ConsumerWidget {
                             _showCreateTask(context, ref, categoriesState),
                       )
                     else
-                      ...todayTasks
-                          .take(5)
-                          .map(
-                            (task) =>
-                                _buildTaskCard(context, ref, task, categories),
+                    ...todayTasks
+                        .take(5)
+                        .map(
+                          (task) => _buildTaskCard(
+                            context,
+                            ref,
+                            task,
+                            categories,
+                            subtaskProgress,
                           ),
+                        ),
                     if (upcomingTasks.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.xl),
                       _buildSectionHeader(
@@ -103,8 +112,13 @@ class HomeScreen extends ConsumerWidget {
                       ...upcomingTasks
                           .take(5)
                           .map(
-                            (task) =>
-                                _buildTaskCard(context, ref, task, categories),
+                            (task) => _buildTaskCard(
+                              context,
+                              ref,
+                              task,
+                              categories,
+                              subtaskProgress,
+                            ),
                           ),
                     ],
                     if (unscheduledTasks.isNotEmpty) ...[
@@ -119,8 +133,13 @@ class HomeScreen extends ConsumerWidget {
                       ...unscheduledTasks
                           .take(5)
                           .map(
-                            (task) =>
-                                _buildTaskCard(context, ref, task, categories),
+                            (task) => _buildTaskCard(
+                              context,
+                              ref,
+                              task,
+                              categories,
+                              subtaskProgress,
+                            ),
                           ),
                     ],
                   ],
@@ -301,16 +320,26 @@ class HomeScreen extends ConsumerWidget {
     WidgetRef ref,
     TaskEntity task,
     List<CategoryEntity> categories,
+    Map<int, List<int>> subtaskProgress,
   ) {
     final category = categories
         .where((item) => item.id == task.categoryId)
         .firstOrNull;
+    final progress = subtaskProgress[task.id] ?? [0, 0];
+
+    void openDetail() {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => TaskDetailScreen(taskId: task.id!),
+        ),
+      );
+    }
 
     return TaskCard(
       task: task,
       categoryName: category?.name,
       categoryColor: category?.color,
-      onTap: () => _showEditTask(context, ref, task, categories),
+      onTap: openDetail,
       onToggleComplete: () {
         if (task.status == TaskStatus.completed) {
           ref.read(taskListProvider.notifier).uncompleteTask(task.id!);
@@ -318,6 +347,9 @@ class HomeScreen extends ConsumerWidget {
           ref.read(taskListProvider.notifier).completeTask(task.id!);
         }
       },
+      subtaskTotal: progress[0],
+      subtaskDone: progress[1],
+      onViewSubtasks: openDetail,
     );
   }
 
@@ -441,47 +473,6 @@ class HomeScreen extends ConsumerWidget {
                     description: description,
                     categoryId: categoryId,
                     priority: priority,
-                    dueDate: dueDate,
-                    recurrence: recurrence,
-                  );
-            },
-      ),
-    );
-  }
-
-  void _showEditTask(
-    BuildContext context,
-    WidgetRef ref,
-    TaskEntity task,
-    List<CategoryEntity> categories,
-  ) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => TaskDialog(
-        task: task,
-        categories: categories,
-        onSave:
-            ({
-              required title,
-              description,
-              required categoryId,
-              required priority,
-              dueDate,
-              required recurrence,
-              status,
-            }) {
-              ref
-                  .read(taskListProvider.notifier)
-                  .updateTask(
-                    id: task.id!,
-                    title: title,
-                    description: description,
-                    categoryId: categoryId,
-                    priority: priority,
-                    status: status ?? task.status,
                     dueDate: dueDate,
                     recurrence: recurrence,
                   );

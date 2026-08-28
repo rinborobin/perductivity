@@ -3,7 +3,8 @@ import '../../domain/entities/category_entity.dart';
 import '../../domain/repositories/category_repository.dart';
 import 'category_providers.dart';
 
-class CategoryListNotifier extends StateNotifier<AsyncValue<List<CategoryEntity>>> {
+class CategoryListNotifier
+    extends StateNotifier<AsyncValue<List<CategoryEntity>>> {
   final CategoryRepository _repository;
 
   CategoryListNotifier(this._repository) : super(const AsyncValue.loading()) {
@@ -63,7 +64,10 @@ class CategoryListNotifier extends StateNotifier<AsyncValue<List<CategoryEntity>
 }
 
 final categoryListProvider =
-    StateNotifierProvider<CategoryListNotifier, AsyncValue<List<CategoryEntity>>>((ref) {
-  final repository = ref.watch(categoryRepositoryProvider);
-  return CategoryListNotifier(repository);
-});
+    StateNotifierProvider<
+      CategoryListNotifier,
+      AsyncValue<List<CategoryEntity>>
+    >((ref) {
+      final repository = ref.watch(categoryRepositoryProvider);
+      return CategoryListNotifier(repository);
+    });

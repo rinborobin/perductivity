@@ -7,6 +7,8 @@ import '../features/statistics/presentation/screens/statistics_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/categories/presentation/screens/categories_screen.dart';
 import '../shared/widgets/app_navigation_dock.dart';
+import '../features/moodle/presentation/screens/moodle_settings_screen.dart';
+import '../features/planner/presentation/screens/ai_planner_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -53,6 +55,14 @@ final GoRouter appRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: '/settings/moodle',
+      builder: (context, state) => const MoodleSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/planner',
+      builder: (context, state) => const AiPlannerScreen(),
     ),
   ],
 );

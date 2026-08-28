@@ -17,12 +17,34 @@ class AppLogger {
     _log(LogLevel.warning, message, tag: tag);
   }
 
-  static void error(String message, {Object? error, StackTrace? stackTrace, String? tag}) {
-    _log(LogLevel.error, message, error: error, stackTrace: stackTrace, tag: tag);
+  static void error(
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+    String? tag,
+  }) {
+    _log(
+      LogLevel.error,
+      message,
+      error: error,
+      stackTrace: stackTrace,
+      tag: tag,
+    );
   }
 
-  static void critical(String message, {Object? error, StackTrace? stackTrace, String? tag}) {
-    _log(LogLevel.critical, message, error: error, stackTrace: stackTrace, tag: tag);
+  static void critical(
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+    String? tag,
+  }) {
+    _log(
+      LogLevel.critical,
+      message,
+      error: error,
+      stackTrace: stackTrace,
+      tag: tag,
+    );
   }
 
   static void _log(

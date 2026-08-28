@@ -6,7 +6,6 @@ import '../../../../shared/widgets/app_action_button.dart';
 import '../../../../shared/widgets/app_bottom_sheet.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../../categories/domain/entities/category_entity.dart';
-import 'subtask_editor.dart';
 
 class TaskDialog extends StatefulWidget {
   final TaskEntity? task;
@@ -290,10 +289,7 @@ class _TaskDialogState extends State<TaskDialog> {
                   }
                 },
               ),
-              if (widget.task != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                SubtaskEditor(taskId: widget.task!.id!),
-              ],
+
             ],
           ),
         ),
